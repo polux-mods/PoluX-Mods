@@ -76,7 +76,7 @@
       <div class="hero-copy">
         <p class="eyebrow">Farming Simulator Mobile 20</p>
         <h1 data-i18n="heroTitle">Мінімалістичний гараж модів у старому піксельному стилі.</h1>
-        <p data-i18n="heroText">Polux Mods — майбутня база якісних модифікацій, техніки, карт і оновлень для мобільного Farming Simulator.</p>
+        <p data-i18n="heroText">Polux Mods — база якісних модифікацій, техніки, карт і оновлень для мобільного Farming Simulator.</p>
         <div class="hero-actions">
           <a class="btn primary" href="#mods" data-link data-i18n="viewMods">Дивитись моди</a>
           <a class="btn" href="#about" data-link data-i18n="learnMore">Детальніше</a>
@@ -93,7 +93,7 @@
     <section class="grid-3 reveal">
       <article class="card"><span>01</span><h3 data-i18n="featureDesign">Чистий дизайн</h3><p data-i18n="featureDesignText">Мінімум шуму, максимум атмосфери: сітка, піксельні акценти, точні відступи.</p></article>
       <article class="card"><span>02</span><h3 data-i18n="featureSpa">SPA-переходи</h3><p data-i18n="featureSpaText">Сторінки перемикаються без перезавантаження браузера, з ретро-анімацією.</p></article>
-      <article class="card"><span>03</span><h3 data-i18n="featureFuture">Готовий до БД</h3><p data-i18n="featureFutureText">Моди зараз у JS-масиві, але структура підготовлена для API, акаунтів і адмін-панелі.</p></article>
+      <article class="card"><span>03</span><h3 data-i18n="featureFuture">Онлайн-система</h3><p data-i18n="featureFutureText">Каталог, профілі та авторизація працюють як єдина система Polux Mods.</p></article>
     </section>
   </template>
 
@@ -101,7 +101,7 @@
     <section class="page-head page-panel">
       <p class="eyebrow">/mods</p>
       <h1 data-i18n="modsTitle">Каталог модів</h1>
-      <p data-i18n="modsText">Шаблон каталогу, який пізніше можна заповнювати з бази даних.</p>
+      <p data-i18n="modsText">Офіційний каталог модів Polux Mods з технікою, картами, інструментами та оновленнями для FS Mobile.</p>
     </section>
     <section class="filters reveal">
       <input id="searchInput" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Пошук мода..." />
@@ -114,10 +114,10 @@
     <section class="page-panel narrow reveal">
       <p class="eyebrow">/about</p>
       <h1 data-i18n="aboutTitle">Про Polux Mods</h1>
-      <p data-i18n="aboutText">Це стартова версія сайту для модів Farming Simulator Mobile. Вона зроблена з нуля: адаптивна, швидка, готова до майбутньої бази даних і системи акаунтів.</p>
+      <p data-i18n="aboutText">Polux Mods — повноцінний сайт для модів Farming Simulator Mobile: адаптивний каталог, акаунти користувачів, профілі та зручна навігація.</p>
       <div class="terminal-box">
-        <p>&gt; database_status: prepared</p>
-        <p>&gt; accounts_module: planned</p>
+        <p>&gt; database_status: online</p>
+        <p>&gt; accounts_module: Firebase Auth</p>
         <p>&gt; mobile_layout: optimized</p>
       </div>
     </section>
@@ -127,12 +127,12 @@
     <section class="page-panel narrow reveal">
       <p class="eyebrow">/contact</p>
       <h1 data-i18n="contactTitle">Зв'язок</h1>
-      <p data-i18n="contactText">Тут можна буде додати форму, Telegram, Discord, GitHub або адмін-панель для заявок на моди.</p>
+      <p data-i18n="contactText">Зв’яжіться з командою Polux Mods, запропонуйте мод, повідомте про проблему або надішліть ідею для розвитку проєкту.</p>
       <form class="contact-form">
         <input data-i18n-placeholder="namePlaceholder" placeholder="Ваше ім'я" />
         <input data-i18n-placeholder="emailPlaceholder" placeholder="Email" />
         <textarea data-i18n-placeholder="messagePlaceholder" placeholder="Повідомлення"></textarea>
-        <button class="btn primary" type="button" data-i18n="sendDemo">Демо-кнопка</button>
+        <button class="btn primary" type="button" data-i18n="sendMessage">Надіслати</button>
       </form>
     </section>
   </template>
@@ -154,7 +154,7 @@
       <button class="auth-close" id="authClose" type="button" aria-label="Close">×</button>
       <p class="eyebrow">/account</p>
       <h2 id="authTitle" data-i18n="loginTitle">Вхід</h2>
-      <p class="auth-hint" data-i18n="authDemoHint">Поки це демо-режим без сервера. Пізніше ці поля підключаться до бази даних.</p>
+      <p class="auth-hint" data-i18n="authHint">Увійдіть у Polux Mods або створіть акаунт для профілю, обраних модів і майбутніх можливостей спільноти.</p>
       <div class="auth-status" id="authStatus" aria-live="polite"></div>
       <div class="auth-tabs">
         <button class="auth-tab active" id="loginTab" type="button" data-mode="login" data-i18n="loginTab">Вхід</button>
