@@ -2,7 +2,7 @@ const $ = (q, root = document) => root.querySelector(q);
 const $$ = (q, root = document) => [...root.querySelectorAll(q)];
 
 const STORAGE = {
-  theme: 'polux.theme', crt: 'polux.crt', lang: 'polux.lang', user: 'polux.user', profileData: 'polux.profile.data', sessions: 'polux.sessions', thanks: 'polux.thanks', reports: 'polux.reports'
+  theme: 'polux.theme', crt: 'polux.crt', lang: 'polux.lang', user: 'polux.user'
 };
 
 const LANGS = ['uk','ru','en','pl','de','es','fr'];
@@ -34,12 +34,12 @@ const UI_UK = {
   contactTitle:"Зв'язок",contactText:'Зв’яжіться з командою Polux Mods, запропонуйте мод, повідомте про проблему або надішліть ідею для розвитку проєкту.',
   namePlaceholder:"Ваше ім'я",emailPlaceholder:'Email',messagePlaceholder:'Повідомлення',sendMessage:'Надіслати',open:'Відкрити',download:'Завантажити',status:'Статус',category:'Категорія',version:'Версія',game:'Гра',back:'Назад до каталогу',
   universalTemplate:'Сторінка мода містить опис, версію, статус, вимоги, список змін і посилання на завантаження.',
-  loginShort:'Вхід',profileTitle:'Профіль',loginTitle:'Вхід',registerTitle:'Реєстрація',authHint:'Увійдіть у Polux Mods або створіть акаунт для профілю, обраних модів і майбутніх можливостей спільноти.',loginTab:'Вхід',registerTab:'Реєстрація',displayName:"Ім\'я профілю",password:'Пароль',loginButton:'Увійти',registerButton:'Створити акаунт',logout:'Вийти',profileGuest:'Ви ще не увійшли.',openLogin:'Увійти або зареєструватись',profileEmail:'Email',profileRole:'Роль',userRole:'Користувач',userRole:'Користувач',avatarFuture:'Аватарка профілю автоматично береться з Google-акаунта або профілю користувача.',menuProfile:'Профіль',menuMyMods:'Мої моди',menuSettings:'Налаштування',menuLogout:'Вихід',confirmPassword:'Підтвердження пароля',showPassword:'Показати пароль',hidePassword:'Сховати пароль',fieldRequired:'Це поле обов’язкове.',emailInvalid:'Введіть коректний email у форматі name@example.com.',passwordsDontMatch:'Паролі не збігаються.',passwordTooShort:'Пароль має містити мінімум 6 символів.',emailVerificationSent:'Ми надіслали лист підтвердження на вашу пошту. Перейдіть за посиланням у листі, потім натисніть «Я вже підтвердив».',verifyEmailBeforeLogin:'Спочатку підтвердіть електронну пошту. Ми можемо надіслати лист ще раз.',resendVerification:'Надіслати лист ще раз',checkVerification:'Я вже підтвердив',verificationStillPending:'Пошта ще не підтверджена. Перевірте лист у папці «Вхідні» або «Спам».',verificationSuccess:'Пошта підтверджена. Вхід виконано.',verificationResent:'Лист підтвердження надіслано ще раз.',firebaseConfigMissing:'Firebase не підключився. Перевір scripts/firebase-config.js і домен у Firebase Authorized domains.',authWrongCredentials:'Неправильний email або пароль.',authEmailInUse:'Цей email вже зареєстрований.',authNetworkError:'Немає з’єднання або Firebase недоступний.',emailNotVerifiedBadge:'Пошта очікує підтвердження',emailVerifiedBadge:'Пошта підтверджена'
+  loginShort:'Вхід',profileTitle:'Профіль',loginTitle:'Вхід',registerTitle:'Реєстрація',authHint:'Увійдіть у Polux Mods або створіть акаунт для профілю, обраних модів і майбутніх можливостей спільноти.',loginTab:'Вхід',registerTab:'Реєстрація',displayName:"Ім\'я профілю",password:'Пароль',loginButton:'Увійти',registerButton:'Створити акаунт',logout:'Вийти',profileGuest:'Ви ще не увійшли.',openLogin:'Увійти або зареєструватись',profileEmail:'Email',profileRole:'Роль',userRole:'Користувач',userRole:'Користувач',avatarFuture:'Аватарка профілю автоматично береться з Google-акаунта або профілю користувача.',menuProfile:'Профіль',menuMyMods:'Мої моди',menuSettings:'Налаштування',menuLogout:'Вихід',confirmPassword:'Підтвердження пароля',showPassword:'Показати пароль',hidePassword:'Сховати пароль',fieldRequired:'Це поле обов’язкове.',emailInvalid:'Введіть коректний email у форматі name@example.com.',passwordsDontMatch:'Паролі не збігаються.',passwordTooShort:'Пароль має містити мінімум 6 символів.',emailVerificationSent:'Ми надіслали лист підтвердження на вашу пошту. Перейдіть за посиланням у листі, потім натисніть «Я вже підтвердив».',verifyEmailBeforeLogin:'Спочатку підтвердіть електронну пошту. Ми можемо надіслати лист ще раз.',resendVerification:'Надіслати лист ще раз',checkVerification:'Я вже підтвердив',verificationStillPending:'Пошта ще не підтверджена. Перевірте лист у папці «Вхідні» або «Спам».',verificationSuccess:'Пошта підтверджена. Вхід виконано.',verificationResent:'Лист підтвердження надіслано ще раз.',firebaseConfigMissing:'Firebase ще не налаштований. Заповни POLUX_FIREBASE_CONFIG в index.html.',authWrongCredentials:'Неправильний email або пароль.',authEmailInUse:'Цей email вже зареєстрований.',authNetworkError:'Немає з’єднання або Firebase недоступний.',emailNotVerifiedBadge:'Пошта очікує підтвердження',emailVerifiedBadge:'Пошта підтверджена'
 };
 
 const TRANSLATION_MEMORY = {
-  ru: {loading:'Загрузка модуля...',navHome:'Главная',navMods:'Моды',navAbout:'Проект',navContact:'Связь',crtOff:'CRT: вкл.',crtOn:'CRT: выкл.',heroTitle:'Минималистичный гараж модов в старом пиксельном стиле.',heroText:'Polux Mods — будущая база качественных модификаций, техники, карт и обновлений для мобильного Farming Simulator.',viewMods:'Смотреть моды',learnMore:'Подробнее',featureDesign:'Чистый дизайн',featureDesignText:'Минимум шума, максимум атмосферы: сетка, пиксельные акценты, точные отступы.',featureSpa:'SPA-переходы',featureSpaText:'Страницы переключаются без перезагрузки браузера, с ретро-анимацией.',featureFuture:'Онлайн-система',featureFutureText:'Сейчас моды находятся в JS-массиве, но структура подготовлена для API, аккаунтов и админ-панели.',modsTitle:'Каталог модов',modsText:'Официальный каталог модов Polux Mods с техникой, картами, инструментами и обновлениями для FS Mobile.',searchPlaceholder:'Поиск мода...',allCategories:'Все категории',aboutTitle:'О Polux Mods',aboutText:'Polux Mods — полноценный сайт для модов Farming Simulator Mobile: адаптивный каталог, аккаунты пользователей, профили и удобная навигация.',contactTitle:'Связь',contactText:'Здесь позже можно добавить форму, Telegram, Discord, GitHub или админ-панель для заявок на моды.',namePlaceholder:'Ваше имя',emailPlaceholder:'Email',messagePlaceholder:'Сообщение',sendMessage:'Надіслати',open:'Открыть',download:'Скачать',status:'Статус',category:'Категория',version:'Версия',game:'Игра',back:'Назад к каталогу',universalTemplate:'Страница мода содержит описание, версию, статус, требования, список изменений и ссылки на скачивание.',loginShort:'Вход',profileTitle:'Профиль',loginTitle:'Вход',registerTitle:'Регистрация',authHint:'Войдите в Polux Mods или создайте аккаунт для профиля, избранных модов и возможностей сообщества.',loginTab:'Вход',registerTab:'Регистрация',displayName:'Имя профиля',password:'Пароль',loginButton:'Войти',registerButton:'Создать аккаунт',logout:'Выйти',profileGuest:'Вы еще не вошли.',openLogin:'Войти или зарегистрироваться',profileEmail:'Email',profileRole:'Роль',userRole:'Пользователь',userRole:'Пользователь',avatarFuture:'Аватар профиля автоматически берётся из Google-аккаунта или профиля пользователя.',menuProfile:'Профиль',menuMyMods:'Мои моды',menuSettings:'Настройки',menuLogout:'Выход',confirmPassword:'Подтверждение пароля',showPassword:'Показать пароль',hidePassword:'Скрыть пароль',fieldRequired:'Это поле обязательно.',emailInvalid:'Введите корректный email в формате name@example.com.',passwordsDontMatch:'Пароли не совпадают.',passwordTooShort:'Пароль должен содержать минимум 6 символов.',emailVerificationSent:'Мы отправили письмо подтверждения на вашу почту. Перейдите по ссылке в письме, затем нажмите «Я уже подтвердил».',verifyEmailBeforeLogin:'Сначала подтвердите электронную почту. Мы можем отправить письмо еще раз.',resendVerification:'Отправить письмо еще раз',checkVerification:'Я уже подтвердил',verificationStillPending:'Почта еще не подтверждена. Проверьте письмо во «Входящих» или «Спаме».',verificationSuccess:'Почта подтверждена. Вход выполнен.',verificationResent:'Письмо подтверждения отправлено еще раз.',firebaseConfigMissing:'Firebase не подключился. Проверьте scripts/firebase-config.js и домен в Firebase Authorized domains.',authWrongCredentials:'Неправильный email или пароль.',authEmailInUse:'Этот email уже зарегистрирован.',authNetworkError:'Нет соединения или Firebase недоступен.',emailNotVerifiedBadge:'Почта ожидает подтверждения',emailVerifiedBadge:'Почта подтверждена'},
-  en: {loading:'Loading module...',navHome:'Home',navMods:'Mods',navAbout:'Project',navContact:'Contact',crtOff:'CRT: on',crtOn:'CRT: off',heroTitle:'A minimalist mod garage in an old pixel style.',heroText:'Polux Mods is a future database of quality modifications, vehicles, maps and updates for mobile Farming Simulator.',viewMods:'View mods',learnMore:'Learn more',featureDesign:'Clean design',featureDesignText:'Less noise, more atmosphere: grid, pixel accents and precise spacing.',featureSpa:'SPA transitions',featureSpaText:'Pages switch without browser reloads, using a retro animation.',featureFuture:'Database-ready',featureFutureText:'Mods are currently stored in a JS array, but the structure is ready for API, accounts and an admin panel.',modsTitle:'Mods catalog',modsText:'A catalog template that can later be filled from a database.',searchPlaceholder:'Search mod...',allCategories:'All categories',aboutTitle:'About Polux Mods',aboutText:'This is a starter site for Farming Simulator Mobile mods. It is built from scratch: responsive, fast, and ready for a future database and account system.',contactTitle:'Contact',contactText:'A form, Telegram, Discord, GitHub or an admin panel for mod requests can be added here later.',namePlaceholder:'Your name',emailPlaceholder:'Email',messagePlaceholder:'Message',sendMessage:'Send',open:'Open',download:'Download',status:'Status',category:'Category',version:'Version',game:'Game',back:'Back to catalog',universalTemplate:'This is a universal mod page template: screenshots, requirements, versions, changelog, download links and comments can be loaded from a database later.',loginShort:'Login',profileTitle:'Profile',loginTitle:'Login',registerTitle:'Registration',authHint:'Sign in to Polux Mods or create an account for your profile, favorite mods, and community features.',loginTab:'Login',registerTab:'Register',displayName:'Profile name',password:'Password',loginButton:'Log in',registerButton:'Create account',logout:'Log out',profileGuest:'You are not logged in yet.',openLogin:'Log in or register',profileEmail:'Email',profileRole:'Role',userRole:'User',userRole:'User',avatarFuture:'The profile avatar is taken automatically from your Google account or user profile.',menuProfile:'Profile',menuMyMods:'My mods',menuSettings:'Settings',menuLogout:'Log out',confirmPassword:'Confirm password',showPassword:'Show password',hidePassword:'Hide password',fieldRequired:'This field is required.',emailInvalid:'Enter a valid email in the format name@example.com.',passwordsDontMatch:'Passwords do not match.',passwordTooShort:'Password must be at least 6 characters.',emailVerificationSent:'We sent a verification email. Open the link in that email, then press “I have confirmed”.',verifyEmailBeforeLogin:'Please verify your email first. We can send the verification email again.',resendVerification:'Send email again',checkVerification:'I have confirmed',verificationStillPending:'Email is not verified yet. Check Inbox or Spam.',verificationSuccess:'Email verified. You are logged in.',verificationResent:'Verification email sent again.',firebaseConfigMissing:'Firebase did not connect. Check scripts/firebase-config.js and Firebase Authorized domains.',authWrongCredentials:'Wrong email or password.',authEmailInUse:'This email is already registered.',authNetworkError:'No connection or Firebase is unavailable.',emailNotVerifiedBadge:'Email verification pending',emailVerifiedBadge:'Email verified'},
+  ru: {loading:'Загрузка модуля...',navHome:'Главная',navMods:'Моды',navAbout:'Проект',navContact:'Связь',crtOff:'CRT: вкл.',crtOn:'CRT: выкл.',heroTitle:'Минималистичный гараж модов в старом пиксельном стиле.',heroText:'Polux Mods — будущая база качественных модификаций, техники, карт и обновлений для мобильного Farming Simulator.',viewMods:'Смотреть моды',learnMore:'Подробнее',featureDesign:'Чистый дизайн',featureDesignText:'Минимум шума, максимум атмосферы: сетка, пиксельные акценты, точные отступы.',featureSpa:'SPA-переходы',featureSpaText:'Страницы переключаются без перезагрузки браузера, с ретро-анимацией.',featureFuture:'Онлайн-система',featureFutureText:'Сейчас моды находятся в JS-массиве, но структура подготовлена для API, аккаунтов и админ-панели.',modsTitle:'Каталог модов',modsText:'Официальный каталог модов Polux Mods с техникой, картами, инструментами и обновлениями для FS Mobile.',searchPlaceholder:'Поиск мода...',allCategories:'Все категории',aboutTitle:'О Polux Mods',aboutText:'Polux Mods — полноценный сайт для модов Farming Simulator Mobile: адаптивный каталог, аккаунты пользователей, профили и удобная навигация.',contactTitle:'Связь',contactText:'Здесь позже можно добавить форму, Telegram, Discord, GitHub или админ-панель для заявок на моды.',namePlaceholder:'Ваше имя',emailPlaceholder:'Email',messagePlaceholder:'Сообщение',sendMessage:'Надіслати',open:'Открыть',download:'Скачать',status:'Статус',category:'Категория',version:'Версия',game:'Игра',back:'Назад к каталогу',universalTemplate:'Страница мода содержит описание, версию, статус, требования, список изменений и ссылки на скачивание.',loginShort:'Вход',profileTitle:'Профиль',loginTitle:'Вход',registerTitle:'Регистрация',authHint:'Войдите в Polux Mods или создайте аккаунт для профиля, избранных модов и возможностей сообщества.',loginTab:'Вход',registerTab:'Регистрация',displayName:'Имя профиля',password:'Пароль',loginButton:'Войти',registerButton:'Создать аккаунт',logout:'Выйти',profileGuest:'Вы еще не вошли.',openLogin:'Войти или зарегистрироваться',profileEmail:'Email',profileRole:'Роль',userRole:'Пользователь',userRole:'Пользователь',avatarFuture:'Аватар профиля автоматически берётся из Google-аккаунта или профиля пользователя.',menuProfile:'Профиль',menuMyMods:'Мои моды',menuSettings:'Настройки',menuLogout:'Выход',confirmPassword:'Подтверждение пароля',showPassword:'Показать пароль',hidePassword:'Скрыть пароль',fieldRequired:'Это поле обязательно.',emailInvalid:'Введите корректный email в формате name@example.com.',passwordsDontMatch:'Пароли не совпадают.',passwordTooShort:'Пароль должен содержать минимум 6 символов.',emailVerificationSent:'Мы отправили письмо подтверждения на вашу почту. Перейдите по ссылке в письме, затем нажмите «Я уже подтвердил».',verifyEmailBeforeLogin:'Сначала подтвердите электронную почту. Мы можем отправить письмо еще раз.',resendVerification:'Отправить письмо еще раз',checkVerification:'Я уже подтвердил',verificationStillPending:'Почта еще не подтверждена. Проверьте письмо во «Входящих» или «Спаме».',verificationSuccess:'Почта подтверждена. Вход выполнен.',verificationResent:'Письмо подтверждения отправлено еще раз.',firebaseConfigMissing:'Firebase еще не настроен. Заполните POLUX_FIREBASE_CONFIG в index.html.',authWrongCredentials:'Неправильный email или пароль.',authEmailInUse:'Этот email уже зарегистрирован.',authNetworkError:'Нет соединения или Firebase недоступен.',emailNotVerifiedBadge:'Почта ожидает подтверждения',emailVerifiedBadge:'Почта подтверждена'},
+  en: {loading:'Loading module...',navHome:'Home',navMods:'Mods',navAbout:'Project',navContact:'Contact',crtOff:'CRT: on',crtOn:'CRT: off',heroTitle:'A minimalist mod garage in an old pixel style.',heroText:'Polux Mods is a future database of quality modifications, vehicles, maps and updates for mobile Farming Simulator.',viewMods:'View mods',learnMore:'Learn more',featureDesign:'Clean design',featureDesignText:'Less noise, more atmosphere: grid, pixel accents and precise spacing.',featureSpa:'SPA transitions',featureSpaText:'Pages switch without browser reloads, using a retro animation.',featureFuture:'Database-ready',featureFutureText:'Mods are currently stored in a JS array, but the structure is ready for API, accounts and an admin panel.',modsTitle:'Mods catalog',modsText:'A catalog template that can later be filled from a database.',searchPlaceholder:'Search mod...',allCategories:'All categories',aboutTitle:'About Polux Mods',aboutText:'This is a starter site for Farming Simulator Mobile mods. It is built from scratch: responsive, fast, and ready for a future database and account system.',contactTitle:'Contact',contactText:'A form, Telegram, Discord, GitHub or an admin panel for mod requests can be added here later.',namePlaceholder:'Your name',emailPlaceholder:'Email',messagePlaceholder:'Message',sendMessage:'Send',open:'Open',download:'Download',status:'Status',category:'Category',version:'Version',game:'Game',back:'Back to catalog',universalTemplate:'This is a universal mod page template: screenshots, requirements, versions, changelog, download links and comments can be loaded from a database later.',loginShort:'Login',profileTitle:'Profile',loginTitle:'Login',registerTitle:'Registration',authHint:'Sign in to Polux Mods or create an account for your profile, favorite mods, and community features.',loginTab:'Login',registerTab:'Register',displayName:'Profile name',password:'Password',loginButton:'Log in',registerButton:'Create account',logout:'Log out',profileGuest:'You are not logged in yet.',openLogin:'Log in or register',profileEmail:'Email',profileRole:'Role',userRole:'User',userRole:'User',avatarFuture:'The profile avatar is taken automatically from your Google account or user profile.',menuProfile:'Profile',menuMyMods:'My mods',menuSettings:'Settings',menuLogout:'Log out',confirmPassword:'Confirm password',showPassword:'Show password',hidePassword:'Hide password',fieldRequired:'This field is required.',emailInvalid:'Enter a valid email in the format name@example.com.',passwordsDontMatch:'Passwords do not match.',passwordTooShort:'Password must be at least 6 characters.',emailVerificationSent:'We sent a verification email. Open the link in that email, then press “I have confirmed”.',verifyEmailBeforeLogin:'Please verify your email first. We can send the verification email again.',resendVerification:'Send email again',checkVerification:'I have confirmed',verificationStillPending:'Email is not verified yet. Check Inbox or Spam.',verificationSuccess:'Email verified. You are logged in.',verificationResent:'Verification email sent again.',firebaseConfigMissing:'Firebase is not configured yet. Fill POLUX_FIREBASE_CONFIG in index.html.',authWrongCredentials:'Wrong email or password.',authEmailInUse:'This email is already registered.',authNetworkError:'No connection or Firebase is unavailable.',emailNotVerifiedBadge:'Email verification pending',emailVerifiedBadge:'Email verified'},
   pl: {navHome:'Główna',navMods:'Mody',navAbout:'Projekt',navContact:'Kontakt',loading:'Ładowanie modułu...',crtOff:'CRT: wł.',crtOn:'CRT: wył.',heroTitle:'Minimalistyczny garaż modów w starym pikselowym stylu.',heroText:'Polux Mods to przyszła baza jakościowych modyfikacji, maszyn, map i aktualizacji do mobilnego Farming Simulator.',viewMods:'Zobacz mody',learnMore:'Więcej',modsTitle:'Katalog modów',searchPlaceholder:'Szukaj moda...',allCategories:'Wszystkie kategorie',open:'Otwórz',download:'Pobierz',back:'Powrót do katalogu',confirmPassword:'Potwierdź hasło',showPassword:'Pokaż hasło',hidePassword:'Ukryj hasło',fieldRequired:'To pole jest wymagane.',emailInvalid:'Wpisz poprawny email w formacie name@example.com.',passwordsDontMatch:'Hasła nie są takie same.',passwordTooShort:'Hasło musi mieć co najmniej 6 znaków.',emailVerificationSent:'Wysłaliśmy wiadomość weryfikacyjną. Otwórz link w mailu, potem kliknij „Już potwierdziłem”.',verifyEmailBeforeLogin:'Najpierw potwierdź email. Możemy wysłać wiadomość ponownie.',resendVerification:'Wyślij ponownie',checkVerification:'Już potwierdziłem',verificationStillPending:'Email nie jest jeszcze potwierdzony. Sprawdź Odebrane lub Spam.',verificationSuccess:'Email potwierdzony. Zalogowano.',verificationResent:'Wiadomość weryfikacyjna została wysłana ponownie.',firebaseConfigMissing:'Firebase nie jest jeszcze skonfigurowany. Uzupełnij POLUX_FIREBASE_CONFIG w index.html.',authWrongCredentials:'Nieprawidłowy email lub hasło.',authEmailInUse:'Ten email jest już zarejestrowany.',authNetworkError:'Brak połączenia albo Firebase jest niedostępny.',emailNotVerifiedBadge:'Email oczekuje na potwierdzenie',emailVerifiedBadge:'Email potwierdzony'},
   de: {navHome:'Start',navMods:'Mods',navAbout:'Projekt',navContact:'Kontakt',loading:'Modul wird geladen...',crtOff:'CRT: ein',crtOn:'CRT: aus',heroTitle:'Eine minimalistische Mod-Garage im alten Pixel-Stil.',heroText:'Polux Mods ist eine zukünftige Datenbank für hochwertige Mods, Fahrzeuge, Karten und Updates für Farming Simulator Mobile.',viewMods:'Mods ansehen',learnMore:'Mehr erfahren',modsTitle:'Mod-Katalog',searchPlaceholder:'Mod suchen...',allCategories:'Alle Kategorien',open:'Öffnen',download:'Herunterladen',back:'Zurück zum Katalog',confirmPassword:'Passwort bestätigen',showPassword:'Passwort anzeigen',hidePassword:'Passwort ausblenden',fieldRequired:'Dieses Feld ist erforderlich.',emailInvalid:'Gib eine gültige E-Mail im Format name@example.com ein.',passwordsDontMatch:'Die Passwörter stimmen nicht überein.',passwordTooShort:'Das Passwort muss mindestens 6 Zeichen lang sein.',emailVerificationSent:'Wir haben eine Bestätigungs-E-Mail gesendet. Öffne den Link und klicke danach auf „Ich habe bestätigt“.',verifyEmailBeforeLogin:'Bitte bestätige zuerst deine E-Mail. Wir können die E-Mail erneut senden.',resendVerification:'E-Mail erneut senden',checkVerification:'Ich habe bestätigt',verificationStillPending:'E-Mail ist noch nicht bestätigt. Prüfe Posteingang oder Spam.',verificationSuccess:'E-Mail bestätigt. Du bist angemeldet.',verificationResent:'Bestätigungs-E-Mail erneut gesendet.',firebaseConfigMissing:'Firebase ist noch nicht konfiguriert. Fülle POLUX_FIREBASE_CONFIG in index.html aus.',authWrongCredentials:'Falsche E-Mail oder falsches Passwort.',authEmailInUse:'Diese E-Mail ist bereits registriert.',authNetworkError:'Keine Verbindung oder Firebase ist nicht verfügbar.',emailNotVerifiedBadge:'E-Mail-Bestätigung ausstehend',emailVerifiedBadge:'E-Mail bestätigt'},
   es: {navHome:'Inicio',navMods:'Mods',navAbout:'Proyecto',navContact:'Contacto',loading:'Cargando módulo...',crtOff:'CRT: activado',crtOn:'CRT: desactivado',heroTitle:'Un garaje minimalista de mods con estilo píxel antiguo.',heroText:'Polux Mods será una base de datos de modificaciones, vehículos, mapas y actualizaciones de calidad para Farming Simulator Mobile.',viewMods:'Ver mods',learnMore:'Más detalles',modsTitle:'Catálogo de mods',searchPlaceholder:'Buscar mod...',allCategories:'Todas las categorías',open:'Abrir',download:'Descargar',back:'Volver al catálogo',confirmPassword:'Confirmar contraseña',showPassword:'Mostrar contraseña',hidePassword:'Ocultar contraseña',fieldRequired:'Este campo es obligatorio.',emailInvalid:'Introduce un email válido con el formato name@example.com.',passwordsDontMatch:'Las contraseñas no coinciden.',passwordTooShort:'La contraseña debe tener al menos 6 caracteres.',emailVerificationSent:'Enviamos un email de verificación. Abre el enlace del email y luego pulsa “Ya confirmé”.',verifyEmailBeforeLogin:'Primero confirma tu email. Podemos enviar el email otra vez.',resendVerification:'Enviar otra vez',checkVerification:'Ya confirmé',verificationStillPending:'El email aún no está verificado. Revisa Entrada o Spam.',verificationSuccess:'Email verificado. Sesión iniciada.',verificationResent:'Email de verificación enviado otra vez.',firebaseConfigMissing:'Firebase aún no está configurado. Rellena POLUX_FIREBASE_CONFIG en index.html.',authWrongCredentials:'Email o contraseña incorrectos.',authEmailInUse:'Este email ya está registrado.',authNetworkError:'Sin conexión o Firebase no está disponible.',emailNotVerifiedBadge:'Email pendiente de verificación',emailVerifiedBadge:'Email verificado'},
@@ -62,14 +62,28 @@ const AUTH_EXTRA_TRANSLATIONS = {
 };
 Object.entries(AUTH_EXTRA_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
 
-const PROFILE_EXTRA_TRANSLATIONS = {
-  uk:{profileSettingsTitle:'Налаштування профілю',lastOnline:'Останній онлайн',registrationDate:'Дата реєстрації',todayRegistered:'сьогодні',daysShort:'дн.',monthsShort:'міс.',userRating:'Рейтинг',userMods:'Моди користувача',userComments:'Коментарі',avatarManage:'Аватарка профілю',coverManage:'Фон профілю',addImage:'Додати',replaceImage:'Замінити',deleteImage:'Видалити',fromFile:'з файлу',fromUrl:'з посилання',imageUrlPrompt:'Встав посилання на зображення',coverReplaceDelete:'Змінити / видалити фон',coverAdd:'Додати фон',avatarReplaceDelete:'Змінити / видалити аватарку',avatarAdd:'Додати аватарку',changeName:'Змінити ім’я',changeNameHint:'Ім’я можна змінити не більше 2 разів за 30 днів.',nameChangesLeft:'Залишилось змін',nameLimitReached:'Ліміт зміни імені вичерпано. Наступна зміна після:',profileBio:'Опис акаунту',bioEmpty:'Опис ще не додано.',bioHint:'Опис акаунту, максимум 70 символів.',addBio:'Додати опис',editBio:'Змінити опис',deleteBio:'Видалити опис',security:'Безпека',changePassword:'Змінити пароль',activeSessions:'Активні сесії',dangerZone:'Небезпечна зона',deleteAccount:'Видалити акаунт',deleteAccountWarning:'Після видалення акаунт можна відновити протягом 30 днів. Дані профілю будуть позначені як видалені. Продовжити?',confirmPasswordToDelete:'Введіть пароль для підтвердження видалення акаунту',accountSoftDeletedLocal:'Акаунт позначено як видалений локально. Для повного видалення Firebase може вимагати повторний вхід.',unknownDevice:'Пристрій',noSessions:'Активних сесій не знайдено.',endAllSessions:'Завершити всі',confirmEndSession:'Завершити цю сесію?',confirmEndAllSessions:'Завершити всі сесії та вийти?',otherProfilesLater:'Перегляд інших профілів буде підключено разом із базою користувачів.',thanksLater:'Подяки будуть збережені в базі після підключення Firestore.',reportReasonPrompt:'Вкажіть причину скарги: спам, образи, шахрайство, порушення правил або інше.',reportSaved:'Скаргу збережено для адмін-панелі.'},
-  en:{profileSettingsTitle:'Profile settings',lastOnline:'Last online',registrationDate:'Registration date',todayRegistered:'today',daysShort:'days',monthsShort:'mo.',userRating:'Rating',userMods:'User mods',userComments:'Comments',avatarManage:'Profile avatar',coverManage:'Profile cover',addImage:'Add',replaceImage:'Replace',deleteImage:'Delete',fromFile:'from file',fromUrl:'from URL',imageUrlPrompt:'Paste image URL',coverReplaceDelete:'Change / delete cover',coverAdd:'Add cover',avatarReplaceDelete:'Change / delete avatar',avatarAdd:'Add avatar',changeName:'Change name',changeNameHint:'Name can be changed no more than 2 times per 30 days.',nameChangesLeft:'Changes left',nameLimitReached:'Name change limit reached. Next change after:',profileBio:'Account bio',bioEmpty:'No bio added yet.',bioHint:'Account bio, max 70 characters.',addBio:'Add bio',editBio:'Edit bio',deleteBio:'Delete bio',security:'Security',changePassword:'Change password',activeSessions:'Active sessions',dangerZone:'Danger zone',deleteAccount:'Delete account',deleteAccountWarning:'After deletion the account can be restored for 30 days. Profile data will be marked as deleted. Continue?',confirmPasswordToDelete:'Enter password to confirm account deletion',accountSoftDeletedLocal:'Account marked as deleted locally. Firebase may require recent login for full deletion.',unknownDevice:'Device',noSessions:'No active sessions found.',endAllSessions:'End all',confirmEndSession:'End this session?',confirmEndAllSessions:'End all sessions and log out?',otherProfilesLater:'Other user profiles will be connected with the user database.',thanksLater:'Thanks will be stored after Firestore is connected.',reportReasonPrompt:'Enter report reason: spam, insults, fraud, rule violation or other.',reportSaved:'Report saved for admin panel.'},
-  ru:{profileSettingsTitle:'Настройки профиля',lastOnline:'Последний онлайн',registrationDate:'Дата регистрации',todayRegistered:'сегодня',daysShort:'дн.',monthsShort:'мес.',userRating:'Рейтинг',userMods:'Моды пользователя',userComments:'Комментарии',avatarManage:'Аватар профиля',coverManage:'Фон профиля',addImage:'Добавить',replaceImage:'Заменить',deleteImage:'Удалить',fromFile:'из файла',fromUrl:'по ссылке',imageUrlPrompt:'Вставьте ссылку на изображение',coverReplaceDelete:'Изменить / удалить фон',coverAdd:'Добавить фон',avatarReplaceDelete:'Изменить / удалить аватар',avatarAdd:'Добавить аватар',changeName:'Изменить имя',changeNameHint:'Имя можно менять не больше 2 раз за 30 дней.',nameChangesLeft:'Осталось изменений',nameLimitReached:'Лимит изменения имени исчерпан. Следующая смена после:',profileBio:'Описание аккаунта',bioEmpty:'Описание еще не добавлено.',bioHint:'Описание аккаунта, максимум 70 символов.',addBio:'Добавить описание',editBio:'Изменить описание',deleteBio:'Удалить описание',security:'Безопасность',changePassword:'Изменить пароль',activeSessions:'Активные сессии',dangerZone:'Опасная зона',deleteAccount:'Удалить аккаунт',deleteAccountWarning:'После удаления аккаунт можно восстановить в течение 30 дней. Данные профиля будут помечены как удаленные. Продолжить?',confirmPasswordToDelete:'Введите пароль для подтверждения удаления аккаунта',accountSoftDeletedLocal:'Аккаунт помечен как удаленный локально. Для полного удаления Firebase может потребовать повторный вход.',unknownDevice:'Устройство',noSessions:'Активные сессии не найдены.',endAllSessions:'Завершить все',confirmEndSession:'Завершить эту сессию?',confirmEndAllSessions:'Завершить все сессии и выйти?',otherProfilesLater:'Просмотр чужих профилей будет подключен вместе с базой пользователей.',thanksLater:'Благодарности будут сохраняться после подключения Firestore.',reportReasonPrompt:'Укажите причину жалобы: спам, оскорбления, мошенничество, нарушение правил или другое.',reportSaved:'Жалоба сохранена для админ-панели.'}
-};
-Object.entries(PROFILE_EXTRA_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
-Object.assign(UI_UK, PROFILE_EXTRA_TRANSLATIONS.uk);
 
+// Profile module translations: immutable UI labels are localized here.
+const PROFILE_UI_UK = {
+  profileSettingsTitle:'Налаштування профілю', profileViewTitle:'Мій профіль', editProfile:'Налаштування', myProfile:'Мій профіль', myModsTitle:'Мої моди',
+  addAvatar:'Додати аватарку', replaceAvatar:'Замінити аватарку', removeAvatar:'Видалити аватарку', addCover:'Додати фон', replaceCover:'Замінити фон', removeCover:'Видалити фон',
+  chooseFromFile:'З файлу', chooseFromUrl:'З посилання', imageUrl:'Посилання на зображення', save:'Зберегти', cancel:'Скасувати', deleteText:'Видалити', replace:'Замінити', add:'Додати',
+  accountName:'Ім’я акаунту', editName:'Змінити ім’я', nameLimitHint:'Ім’я можна змінити не більше 2 разів на місяць.', nameLimitReached:'Ліміт зміни імені вичерпано.', nameAvailableAt:'Наступна зміна буде доступна:', nameTooLong:'Ім’я не може бути довшим за 32 символи.',
+  accountBio:'Опис акаунту', addBio:'Додати опис', editBio:'Змінити опис', removeBio:'Видалити опис', bioLimit:'Опис може містити не більше 70 символів.', bioTooLong:'Опис не може бути довшим за 70 символів.', noBio:'Опис ще не додано.',
+  changePassword:'Змінити пароль', passwordChangeHint:'Після зміни пароля буде виконано вихід з акаунта.', currentPassword:'Поточний пароль', passwordChangedLogout:'Пароль змінено. Потрібно увійти ще раз.',
+  activeSessions:'Активні сесії', sessionsHint:'Сесії фіксуються сайтом Polux Mods для цього браузера. Повне завершення інших пристроїв потребує серверної перевірки Firestore/Cloud Functions.', currentSession:'Поточна сесія', closeSession:'Завершити сесію', closeAllSessions:'Завершити всі', confirmCloseSession:'Завершити цю сесію?', confirmCloseAll:'Завершити всі сесії? Ви вийдете з акаунта на цьому пристрої.',
+  deleteAccount:'Видалити акаунт', deleteAccountTitle:'Видалення акаунта', deleteAccountText:'Акаунт буде позначено як видалений. Його можна відновити протягом 30 днів. Після цього дані можуть бути остаточно видалені.', confirmPasswordToDelete:'Підтвердіть пароль для видалення акаунта.', accountDeleted:'Акаунт позначено як видалений. Ви вийшли з системи.', recoverAccount:'Відновити акаунт', recoverAccountText:'Якщо акаунт був видалений менше 30 днів тому, його можна відновити після входу.', accountRecovered:'Акаунт відновлено.',
+  userTitles:'Звання', titleUser:'Користувач', titleVerified:'Підтверджений акаунт', titleAuthor:'Автор модів', lastOnline:'Останній онлайн', registeredAt:'Дата реєстрації', registeredFor:'Зареєстрований вже', userRating:'Рейтинг користувача', userMods:'Моди користувача', viewUserMods:'Переглянути моди', comments:'Коментарі', viewComments:'Переглянути коментарі', noComments:'Коментарів поки немає.',
+  reportUser:'Поскаржитись', thanksUser:'Надіслати подяку', reportReason:'Причина скарги', reportSpam:'Спам або реклама', reportInsult:'Образи або токсична поведінка', reportFake:'Фейковий профіль або обман', reportRules:'Порушення правил сайту', reportOther:'Інше', reportDetails:'Деталі скарги', reportSent:'Скаргу збережено для адмін-панелі.', thanksConfirm:'Надіслати подяку цьому користувачу? Це додасть +10 до рейтингу.', thanksSent:'Подяку надіслано. Рейтинг користувача підвищено.', thanksLimit:'Ліміт подяк вичерпано або цьому користувачу вже надсилалась подяка.', cantThankSelf:'Не можна надіслати подяку самому собі.',
+  defaultCover:'Стандартний фон профілю', accountActions:'Дії акаунта', month:'місяць', day:'день', days:'днів', today:'сьогодні', never:'невідомо', backToProfile:'Назад до профілю', noUserMods:'У цього користувача поки немає модів у базі.', filteredByAuthor:'Фільтр автора активний:', openSettings:'Відкрити налаштування', signOut:'Вийти'
+};
+Object.assign(UI_UK, PROFILE_UI_UK);
+const PROFILE_TRANSLATIONS = {
+  ru:{profileSettingsTitle:'Настройки профиля',profileViewTitle:'Мой профиль',editProfile:'Настройки',myProfile:'Мой профиль',myModsTitle:'Мои моды',addAvatar:'Добавить аватар',replaceAvatar:'Заменить аватар',removeAvatar:'Удалить аватар',addCover:'Добавить фон',replaceCover:'Заменить фон',removeCover:'Удалить фон',chooseFromFile:'Из файла',chooseFromUrl:'По ссылке',imageUrl:'Ссылка на изображение',save:'Сохранить',cancel:'Отмена',deleteText:'Удалить',replace:'Заменить',add:'Добавить',accountName:'Имя аккаунта',editName:'Изменить имя',nameLimitHint:'Имя можно изменить не больше 2 раз в месяц.',nameLimitReached:'Лимит смены имени исчерпан.',nameAvailableAt:'Следующая смена будет доступна:',nameTooLong:'Имя не может быть длиннее 32 символов.',accountBio:'Описание аккаунта',addBio:'Добавить описание',editBio:'Изменить описание',removeBio:'Удалить описание',bioLimit:'Описание может содержать не больше 70 символов.',bioTooLong:'Описание не может быть длиннее 70 символов.',noBio:'Описание еще не добавлено.',changePassword:'Изменить пароль',passwordChangeHint:'После смены пароля будет выполнен выход из аккаунта.',currentPassword:'Текущий пароль',passwordChangedLogout:'Пароль изменен. Нужно войти заново.',activeSessions:'Активные сессии',currentSession:'Текущая сессия',closeSession:'Завершить сессию',closeAllSessions:'Завершить все',confirmCloseSession:'Завершить эту сессию?',confirmCloseAll:'Завершить все сессии? Вы выйдете из аккаунта на этом устройстве.',deleteAccount:'Удалить аккаунт',deleteAccountTitle:'Удаление аккаунта',deleteAccountText:'Аккаунт будет отмечен как удаленный. Его можно восстановить в течение 30 дней.',confirmPasswordToDelete:'Подтвердите пароль для удаления аккаунта.',accountDeleted:'Аккаунт отмечен как удаленный. Вы вышли из системы.',recoverAccount:'Восстановить аккаунт',recoverAccountText:'Если аккаунт был удален меньше 30 дней назад, его можно восстановить после входа.',accountRecovered:'Аккаунт восстановлен.',userTitles:'Звания',titleUser:'Пользователь',titleVerified:'Подтвержденный аккаунт',titleAuthor:'Автор модов',lastOnline:'Последний онлайн',registeredAt:'Дата регистрации',registeredFor:'Зарегистрирован уже',userRating:'Рейтинг пользователя',userMods:'Моды пользователя',viewUserMods:'Посмотреть моды',comments:'Комментарии',viewComments:'Посмотреть комментарии',noComments:'Комментариев пока нет.',reportUser:'Пожаловаться',thanksUser:'Отправить благодарность',reportReason:'Причина жалобы',reportSpam:'Спам или реклама',reportInsult:'Оскорбления или токсичное поведение',reportFake:'Фейковый профиль или обман',reportRules:'Нарушение правил сайта',reportOther:'Другое',reportDetails:'Детали жалобы',reportSent:'Жалоба сохранена для админ-панели.',thanksConfirm:'Отправить благодарность этому пользователю? Это добавит +10 к рейтингу.',thanksSent:'Благодарность отправлена. Рейтинг повышен.',thanksLimit:'Лимит благодарностей исчерпан или этому пользователю уже отправлялась благодарность.',cantThankSelf:'Нельзя отправить благодарность самому себе.',defaultCover:'Стандартный фон профиля',accountActions:'Действия аккаунта',month:'месяц',day:'день',days:'дней',today:'сегодня',never:'неизвестно',backToProfile:'Назад к профилю',noUserMods:'У этого пользователя пока нет модов в базе.',filteredByAuthor:'Фильтр автора активен:',openSettings:'Открыть настройки',signOut:'Выйти'},
+  en:{profileSettingsTitle:'Profile settings',profileViewTitle:'My profile',editProfile:'Settings',myProfile:'My profile',myModsTitle:'My mods',addAvatar:'Add avatar',replaceAvatar:'Replace avatar',removeAvatar:'Remove avatar',addCover:'Add cover',replaceCover:'Replace cover',removeCover:'Remove cover',chooseFromFile:'From file',chooseFromUrl:'From URL',imageUrl:'Image URL',save:'Save',cancel:'Cancel',deleteText:'Delete',replace:'Replace',add:'Add',accountName:'Account name',editName:'Change name',nameLimitHint:'You can change your name up to 2 times per month.',nameLimitReached:'Name change limit reached.',nameAvailableAt:'Next change will be available:',nameTooLong:'Name cannot be longer than 32 characters.',accountBio:'Account bio',addBio:'Add bio',editBio:'Edit bio',removeBio:'Remove bio',bioLimit:'Bio can contain up to 70 characters.',bioTooLong:'Bio cannot be longer than 70 characters.',noBio:'Bio has not been added yet.',changePassword:'Change password',passwordChangeHint:'After changing the password you will be signed out.',currentPassword:'Current password',passwordChangedLogout:'Password changed. Please sign in again.',activeSessions:'Active sessions',currentSession:'Current session',closeSession:'End session',closeAllSessions:'End all',confirmCloseSession:'End this session?',confirmCloseAll:'End all sessions? You will be signed out on this device.',deleteAccount:'Delete account',deleteAccountTitle:'Delete account',deleteAccountText:'The account will be marked as deleted. It can be restored within 30 days.',confirmPasswordToDelete:'Confirm your password to delete the account.',accountDeleted:'Account marked as deleted. You have been signed out.',recoverAccount:'Recover account',recoverAccountText:'If the account was deleted less than 30 days ago, it can be restored after sign-in.',accountRecovered:'Account recovered.',userTitles:'Titles',titleUser:'User',titleVerified:'Verified account',titleAuthor:'Mod author',lastOnline:'Last online',registeredAt:'Registration date',registeredFor:'Registered for',userRating:'User rating',userMods:'User mods',viewUserMods:'View mods',comments:'Comments',viewComments:'View comments',noComments:'No comments yet.',reportUser:'Report user',thanksUser:'Send thanks',reportReason:'Report reason',reportSpam:'Spam or ads',reportInsult:'Insults or toxic behavior',reportFake:'Fake profile or fraud',reportRules:'Site rules violation',reportOther:'Other',reportDetails:'Report details',reportSent:'Report saved for the admin panel.',thanksConfirm:'Send thanks to this user? This adds +10 rating.',thanksSent:'Thanks sent. User rating increased.',thanksLimit:'Thanks limit reached or thanks already sent to this user.',cantThankSelf:'You cannot thank yourself.',defaultCover:'Default profile cover',accountActions:'Account actions',month:'month',day:'day',days:'days',today:'today',never:'unknown',backToProfile:'Back to profile',noUserMods:'This user has no mods in the database yet.',filteredByAuthor:'Author filter active:',openSettings:'Open settings',signOut:'Sign out'}
+};
+Object.entries(PROFILE_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
+['pl','de','es','fr'].forEach(lang => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, PROFILE_TRANSLATIONS.en));
 
 const GLOSSARY = {
   ru: {'Моди':'Моды','модів':'модов','мода':'мода','Каталог':'Каталог','Усі категорії':'Все категории','Трактори':'Тракторы','Причепи':'Прицепы','Карти':'Карты','Інструменти':'Инструменты','В розробці':'В разработке','Шаблон':'Шаблон','Концепт':'Концепт','Заплановано':'Запланировано','гусеничного трактора':'гусеничного трактора','з відвальним обладнанням':'с отвальным оборудованием','для майбутньої бази даних':'для будущей базы данных'},
@@ -81,7 +95,7 @@ const GLOSSARY = {
 };
 
 const categoryKeys = {tractors:'Трактори', trailers:'Причепи', maps:'Карти', tools:'Інструменти'};
-const statusKeys = {progress:'В розробці', template:'Доступний', concept:'Концепт', planned:'Заплановано'};
+const statusKeys = {progress:'В розробці', template:'Шаблон', concept:'Концепт', planned:'Заплановано'};
 
 function normalizeLang(lang){
   const code = String(lang || '').slice(0,2).toLowerCase();
@@ -166,10 +180,10 @@ function createTranslatedContent(record){
 window.PoluxTranslator = {LANGS, DEFAULT_LANG, languageNames, NO_TRANSLATE_FIELDS, NO_TRANSLATE_TERMS, translateText, translateContent, translateRecord, createTranslatedContent};
 
 const modsSource = [
-  {id:'t4a-bulldozer', author:'Polux Mods', title:'PLX T-4A Bulldozer', category:categoryKeys.tractors, version:'0.9 beta', game:'FS Mobile 20', status:statusKeys.progress, icon:'🚜', desc:'Гусеничний трактор з відвальним обладнанням для важких робіт на фермі.'},
-  {id:'grain-trailer', author:'Polux Mods', title:'PLX Grain Trailer', category:categoryKeys.trailers, version:'1.0 draft', game:'FS Mobile 20', status:statusKeys.template, icon:'▰', desc:'Зерновий причіп для перевезення врожаю з детальним описом і характеристиками.'},
-  {id:'pixel-map-pack', author:'Polux Mods', title:'Pixel Farm Map Pack', category:categoryKeys.maps, version:'0.1 concept', game:'FS Mobile 20', status:statusKeys.concept, icon:'▦', desc:'Пак карт із піксельною атмосферою, описом, скріншотами та списком змін.'},
-  {id:'utility-pack', author:'Polux Mods', title:'Polux Utility Pack', category:categoryKeys.tools, version:'0.2', game:'FS Mobile 20', status:statusKeys.planned, icon:'⚙', desc:'Пак допоміжних модів, виправлень і невеликих доповнень для зручної гри.'}
+  {id:'t4a-bulldozer', author:'Polux Mods', title:'PLX T-4A Bulldozer', category:categoryKeys.tractors, version:'0.9 beta', game:'FS Mobile 20', status:statusKeys.progress, icon:'🚜', desc:'Концепт гусеничного трактора з відвальним обладнанням для майбутньої бази даних.'},
+  {id:'grain-trailer', author:'Polux Mods', title:'PLX Grain Trailer', category:categoryKeys.trailers, version:'1.0 draft', game:'FS Mobile 20', status:statusKeys.template, icon:'▰', desc:'Універсальна картка зернового причепа, підготовлена для майбутньої бази даних.'},
+  {id:'pixel-map-pack', author:'Polux Mods', title:'Pixel Farm Map Pack', category:categoryKeys.maps, version:'0.1 concept', game:'FS Mobile 20', status:statusKeys.concept, icon:'▦', desc:'Картка-заглушка для майбутніх карт, скріншотів і списку змін.'},
+  {id:'utility-pack', author:'Polux Mods', title:'Polux Utility Pack', category:categoryKeys.tools, version:'0.2', game:'FS Mobile 20', status:statusKeys.planned, icon:'⚙', desc:'Підготовлена сторінка для допоміжних модів, виправлень і невеликих доповнень.'}
 ];
 
 let currentLang = detectLang();
@@ -271,9 +285,11 @@ function route(){
     const [page, id] = hash.split('/');
     if(page === 'mods' && id) renderMod(id);
     else if(page === 'mods') renderTemplate('modsTemplate', renderMods);
+    else if(page === 'my-mods') renderMyModsPage();
+    else if(page === 'profile-settings') renderProfileSettingsPage();
+    else if(page === 'user' && id) renderTemplate('profileTemplate', () => renderProfile(id));
     else if(page === 'about') renderTemplate('aboutTemplate');
     else if(page === 'contact') renderTemplate('contactTemplate');
-    else if(page === 'profile' && id === 'settings') renderTemplate('profileTemplate', renderProfileSettings);
     else if(page === 'profile') renderTemplate('profileTemplate', renderProfile);
     else renderTemplate('homeTemplate');
     applyI18n();
@@ -340,9 +356,8 @@ function saveUser(user){
   currentUser = user;
   if(user) localStorage.setItem(STORAGE.user, JSON.stringify(user));
   else localStorage.removeItem(STORAGE.user);
-  if(user && typeof registerSession === 'function') registerSession();
   updateProfileButton();
-  if((location.hash.replace('#','') || 'home') === 'profile') renderProfile();
+  if(['profile','profile-settings'].includes((location.hash.replace('#','') || 'home'))) route();
 }
 function defaultAvatarSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="8" fill="none"/><circle cx="32" cy="24" r="12"/><path d="M12 58c3-15 13-22 20-22s17 7 20 22"/></svg>`;
@@ -441,47 +456,58 @@ function positionProfileMenu(){
   menu.style.maxHeight = Math.max(130, window.innerHeight - top - margin) + 'px';
 }
 
-
-function profileKey(uidOrEmail){ return (uidOrEmail || currentUser?.uid || currentUser?.email || 'guest').replace(/[^a-zA-Z0-9_.@-]/g,'_'); }
-function readProfiles(){ try{return JSON.parse(localStorage.getItem(STORAGE.profileData)||'{}')}catch(e){return{}} }
-function writeProfiles(data){ localStorage.setItem(STORAGE.profileData, JSON.stringify(data)); }
-function defaultProfileData(user=currentUser){
+function profileKey(uid){ return 'polux.profile.' + (uid || currentUser?.uid || currentUser?.email || 'guest'); }
+function allProfilesKey(){ return 'polux.profiles.index'; }
+function sessionId(){
+  let id = localStorage.getItem('polux.session.id');
+  if(!id){ id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('polux.session.id', id); }
+  return id;
+}
+function readProfile(uid=currentUser?.uid){
+  const user = currentUser || {};
+  const raw = localStorage.getItem(profileKey(uid || user.uid || user.email));
   const now = new Date().toISOString();
-  return {uid:user?.uid||'', email:user?.email||'', name:user?.name||user?.displayName||user?.email?.split('@')[0]||t('userRole'), avatar:user?.avatar||user?.photoURL||null, cover:null, bio:'', roleKeys:['userRole'], rating:0, modsCount:0, commentsCount:0, createdAt:now, lastOnline:now, nameChanges:[], deletedUntil:null, deletedAt:null};
+  const base = raw ? JSON.parse(raw) : {};
+  return {
+    uid: uid || user.uid || base.uid || user.email || 'local',
+    name: base.name || user.name || user.email?.split('@')[0] || t('userRole'),
+    email: base.email || user.email || '',
+    avatar: base.avatar || user.avatar || '', cover: base.cover || '', bio: base.bio || '',
+    roles: base.roles || ['titleUser'].concat(user.emailVerified ? ['titleVerified'] : []),
+    rating: Number(base.rating || 0), modsCount: Number(base.modsCount || 0), comments: base.comments || [],
+    createdAt: base.createdAt || user.metadata?.creationTime || now, lastOnline: now,
+    nameChanges: base.nameChanges || [], deletedAt: base.deletedAt || null,
+    thanksFrom: base.thanksFrom || {}, reports: base.reports || [], sessions: base.sessions || []
+  };
 }
-function ensureProfileRecord(firebaseUser){
-  const u = firebaseUser ? firebaseUserToSafe(firebaseUser) : currentUser;
-  if(!u) return null;
-  const key = profileKey(u.uid || u.email);
-  const all = readProfiles();
-  if(!all[key]) all[key] = defaultProfileData(u);
-  all[key] = {...all[key], uid:u.uid||all[key].uid, email:u.email||all[key].email, name:all[key].name||u.name, avatar:all[key].avatar||u.avatar||null, lastOnline:new Date().toISOString()};
-  writeProfiles(all);
-  return all[key];
+function writeProfile(profile){
+  profile.lastOnline = new Date().toISOString();
+  localStorage.setItem(profileKey(profile.uid), JSON.stringify(profile));
+  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
+  index[profile.uid] = {uid:profile.uid, name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating};
+  localStorage.setItem(allProfilesKey(), JSON.stringify(index));
+  if(currentUser && (profile.uid === currentUser.uid || profile.email === currentUser.email)){
+    currentUser = {...currentUser, name:profile.name, avatar:profile.avatar};
+    localStorage.setItem(STORAGE.user, JSON.stringify(currentUser));
+    updateProfileButton();
+  }
 }
-function firebaseUserToSafe(user){ return {uid:user?.uid||'', email:user?.email||'', name:user?.displayName||user?.email?.split('@')[0]||'', avatar:user?.photoURL||null}; }
-function getMyProfile(){ if(!currentUser) return null; return ensureProfileRecord(); }
-function saveMyProfile(p){
+function touchSession(){
   if(!currentUser) return;
-  const all = readProfiles();
-  all[profileKey(currentUser.uid || currentUser.email)] = p;
-  writeProfiles(all);
-  currentUser.name = p.name || currentUser.name;
-  currentUser.avatar = p.avatar || null;
-  saveUser(currentUser);
+  const p = readProfile();
+  const ua = navigator.userAgent;
+  const item = {id:sessionId(), userAgent:ua, browser:detectBrowser(), platform:navigator.platform || 'Android', language:navigator.language || currentLang, lastSeen:new Date().toISOString(), current:true};
+  p.sessions = [item, ...(p.sessions || []).filter(s => s.id !== item.id)].slice(0, 8);
+  writeProfile(p);
 }
-function escapeHtml(v=''){ return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function fmtDate(iso){ if(!iso) return '—'; try{return new Intl.DateTimeFormat(currentLang,{dateStyle:'medium',timeStyle:'short'}).format(new Date(iso));}catch(e){return iso;} }
-function monthAge(iso){
-  if(!iso) return '';
-  const days = Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000));
-  if(days<1) return t('todayRegistered');
-  if(days<30) return `${days} ${t('daysShort')}`;
-  const months=Math.floor(days/30); return `${months} ${t('monthsShort')}`;
-}
-function profileCoverHtml(p){ return p?.cover ? `<img src="${escapeHtml(p.cover)}" alt="">` : `<div class="profile-cover-default">POLUX MODS</div>`; }
-function profileAvatarHtml(p, cls='profile-big-avatar'){ return `<div class="${cls}">${p?.avatar ? `<img src="${escapeHtml(p.avatar)}" alt="">` : defaultAvatarSvg()}</div>`; }
-function renderProfile(){
+function detectBrowser(){ const ua=navigator.userAgent; if(/Edg/i.test(ua)) return 'Edge'; if(/Firefox/i.test(ua)) return 'Firefox'; if(/OPR|Opera/i.test(ua)) return 'Opera'; if(/Chrome/i.test(ua)) return 'Chrome'; if(/Safari/i.test(ua)) return 'Safari'; return 'Browser'; }
+function formatDateShort(value){ if(!value) return t('never'); try{return new Date(value).toLocaleDateString(currentLang,{year:'numeric',month:'short',day:'numeric'});}catch(e){return value;} }
+function daysRegistered(value){ const d=value?new Date(value):new Date(); const days=Math.max(0,Math.floor((Date.now()-d.getTime())/86400000)); return days===0?t('today'):`${days} ${days===1?t('day'):t('days')}`; }
+function defaultCover(){ return `<div class="profile-cover-default"><span>POLUX MODS</span><small>${t('defaultCover')}</small></div>`; }
+function profileAvatarHtml(p, big=true){ return p.avatar ? `<img src="${p.avatar}" alt="">` : defaultAvatarSvg(); }
+function ensureCurrentProfile(){ if(!currentUser) return null; const p=readProfile(); writeProfile(p); touchSession(); return readProfile(); }
+
+function renderProfile(viewUid){
   const box = $('#profileView');
   if(!box) return;
   if(!currentUser){
@@ -489,133 +515,46 @@ function renderProfile(){
     $('#profileLoginBtn').addEventListener('click', () => openAuthModal('login'));
     return;
   }
-  const p = getMyProfile();
+  const p = ensureCurrentProfile();
+  if(p.deletedAt){
+    const canRecover = Date.now() - new Date(p.deletedAt).getTime() <= 30*86400000;
+    box.innerHTML = `<div class="profile-empty"><div class="profile-big-avatar">${profileAvatarHtml(p)}</div><h2>${t('recoverAccount')}</h2><p>${t('recoverAccountText')}</p>${canRecover?`<button class="btn primary" id="recoverAccountBtn">${t('recoverAccount')}</button>`:''}</div>`;
+    $('#recoverAccountBtn')?.addEventListener('click', () => { p.deletedAt=null; writeProfile(p); alert(t('accountRecovered')); renderProfile(); });
+    return;
+  }
+  const isOwn = !viewUid || viewUid === p.uid;
+  const roles = (p.roles || ['titleUser']).map(r => `<span class="profile-rank">${t(r)}</span>`).join('');
+  const commentsCount = (p.comments || []).length;
+  const modsByUser = modsSource.filter(m => (m.author || '').toLowerCase() === (p.name || '').toLowerCase());
   box.innerHTML = `
-    <article class="profile-full-card">
-      <div class="profile-cover">${profileCoverHtml(p)}</div>
+    <div class="profile-hero-card">
+      <div class="profile-cover">${p.cover ? `<img src="${p.cover}" alt="">` : defaultCover()}</div>
       <div class="profile-headline">
-        ${profileAvatarHtml(p)}
+        <div class="profile-big-avatar floating">${profileAvatarHtml(p)}</div>
         <div class="profile-main-info">
-          <h2 data-no-translate>${escapeHtml(p.name || currentUser.name || t('userRole'))}</h2>
-          <div class="profile-ranks"><span>${t('userRole')}</span></div>
-          <p class="verify-badge ${currentUser.emailVerified ? 'ok' : 'warn'}">${t(currentUser.emailVerified ? 'emailVerifiedBadge' : 'emailNotVerifiedBadge')}</p>
+          <h2 data-no-translate>${p.name}</h2>
+          <div class="profile-ranks">${roles}</div>
+          ${p.bio ? `<p class="profile-bio" data-auto-translate>${translateText(p.bio,currentLang)}</p>` : ''}
         </div>
       </div>
-      ${p.bio ? `<p class="profile-bio">${escapeHtml(p.bio)}</p>` : ''}
       <div class="profile-stats-grid">
-        <div><strong>${t('lastOnline')}</strong><span>${fmtDate(p.lastOnline)}</span></div>
-        <div><strong>${t('registrationDate')}</strong><span>${fmtDate(p.createdAt)} · ${monthAge(p.createdAt)}</span></div>
-        <div><strong>${t('userRating')}</strong><span>${Number(p.rating||0)}</span></div>
-        <div><strong>${t('userMods')}</strong><span>${Number(p.modsCount||0)}</span></div>
-        <div><strong>${t('userComments')}</strong><span>${Number(p.commentsCount||0)}</span></div>
+        <div><strong>${t('lastOnline')}</strong><span>${formatDateShort(p.lastOnline)}</span></div>
+        <div><strong>${t('registeredAt')}</strong><span>${formatDateShort(p.createdAt)} · ${t('registeredFor')} ${daysRegistered(p.createdAt)}</span></div>
+        <div><strong>${t('userRating')}</strong><span>${p.rating}</span></div>
+        <button class="stat-button" type="button" id="viewUserMods"><strong>${t('userMods')}</strong><span>${modsByUser.length || p.modsCount} · ${t('viewUserMods')}</span></button>
+        <button class="stat-button" type="button" id="viewUserComments"><strong>${t('comments')}</strong><span>${commentsCount} · ${t('viewComments')}</span></button>
       </div>
       <div class="profile-actions-row">
-        <button class="btn primary" id="profileSettingsBtn" type="button">${t('menuSettings')}</button>
-        <button class="btn" id="myModsBtn" type="button">${t('menuMyMods')}</button>
-        <button class="btn danger-lite" id="logoutBtn" type="button">${t('logout')}</button>
+        ${isOwn ? `<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
       </div>
-    </article>`;
-  $('#profileSettingsBtn').addEventListener('click', () => location.hash = '#profile/settings');
-  $('#myModsBtn').addEventListener('click', openMyMods);
-  $('#logoutBtn').addEventListener('click', () => { getFirebaseAuth()?.signOut?.(); saveUser(null); });
+    </div>`;
+  $('#openProfileSettings')?.addEventListener('click', () => location.hash = '#profile-settings');
+  $('#profileLogoutBtn')?.addEventListener('click', () => { getFirebaseAuth()?.signOut?.(); saveUser(null); });
+  $('#viewUserMods')?.addEventListener('click', () => location.hash = '#my-mods');
+  $('#viewUserComments')?.addEventListener('click', () => openCommentsModal(p));
+  $('#reportUserBtn')?.addEventListener('click', () => openReportModal(p));
+  $('#thanksUserBtn')?.addEventListener('click', () => sendThanks(p));
 }
-function fileToDataUrl(file){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); }); }
-function pickImageFromFile(cb){ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.onchange=async()=>{ if(input.files?.[0]) cb(await fileToDataUrl(input.files[0])); }; input.click(); }
-function promptImageUrl(cb){ const url=prompt(t('imageUrlPrompt')); if(url && /^https?:\/\//i.test(url.trim())) cb(url.trim()); }
-function imageActions(kind){
-  const p=getMyProfile(); if(!p) return;
-  const has=!!p[kind];
-  const action=prompt(`${kind==='avatar'?t('avatarManage'):t('coverManage')}\n1 — ${has?t('replaceImage'):t('addImage')} ${t('fromFile')}\n2 — ${has?t('replaceImage'):t('addImage')} ${t('fromUrl')}\n${has?'3 — '+t('deleteImage'):''}`);
-  if(action==='1') pickImageFromFile(src=>{ const np=getMyProfile(); np[kind]=src; saveMyProfile(np); renderProfileSettings(); });
-  if(action==='2') promptImageUrl(src=>{ const np=getMyProfile(); np[kind]=src; saveMyProfile(np); renderProfileSettings(); });
-  if(action==='3' && has){ p[kind]=null; saveMyProfile(p); renderProfileSettings(); }
-}
-function canChangeName(p){
-  const now=Date.now(); const month=30*86400000;
-  const recent=(p.nameChanges||[]).filter(x=>now-new Date(x).getTime()<month);
-  if(recent.length<2) return {ok:true, recent};
-  const next=new Date(new Date(recent[0]).getTime()+month);
-  return {ok:false,next,recent};
-}
-function changeProfileName(){
-  const p=getMyProfile(); if(!p) return;
-  const limit=canChangeName(p);
-  if(!limit.ok){ alert(`${t('nameLimitReached')} ${fmtDate(limit.next.toISOString())}`); return; }
-  const next=prompt(`${t('changeNameHint')}\n${t('nameChangesLeft')}: ${2-limit.recent.length}`, p.name||'');
-  if(!next) return;
-  const cleaned=next.trim().slice(0,32);
-  if(!cleaned) return;
-  p.name=cleaned; p.nameChanges=[...(limit.recent||[]), new Date().toISOString()]; saveMyProfile(p); renderProfileSettings();
-  const auth=getFirebaseAuth(); auth?.currentUser?.updateProfile?.({displayName:cleaned}).catch(()=>{});
-}
-function editBio(){
-  const p=getMyProfile(); if(!p) return;
-  const next=prompt(t('bioHint'), p.bio||'');
-  if(next===null) return;
-  p.bio=next.trim().slice(0,70); saveMyProfile(p); renderProfileSettings();
-}
-function deleteBio(){ const p=getMyProfile(); if(!p) return; p.bio=''; saveMyProfile(p); renderProfileSettings(); }
-function renderProfileSettings(){
-  const box=$('#profileView'); if(!box) return;
-  if(!currentUser){ renderProfile(); return; }
-  const p=getMyProfile(); const limit=canChangeName(p);
-  box.innerHTML=`
-    <article class="profile-full-card settings-card">
-      <p class="eyebrow">/profile/settings</p>
-      <h2>${t('profileSettingsTitle')}</h2>
-      <div class="profile-cover editable" id="coverEdit">${profileCoverHtml(p)}<button class="media-edit-btn" type="button">${p.cover?t('coverReplaceDelete'):t('coverAdd')}</button></div>
-      <div class="profile-headline settings-headline">
-        <button class="avatar-edit" id="avatarEdit" type="button">${profileAvatarHtml(p)}<span>${p.avatar?t('avatarReplaceDelete'):t('avatarAdd')}</span></button>
-        <div class="profile-main-info"><h2 data-no-translate>${escapeHtml(p.name)}</h2><button class="mini-edit" id="nameEdit" type="button">✎ ${t('changeName')}</button><p class="auth-hint">${t('changeNameHint')} ${limit.ok ? `${t('nameChangesLeft')}: ${2-limit.recent.length}` : `${t('nameLimitReached')} ${fmtDate(limit.next.toISOString())}`}</p></div>
-      </div>
-      <section class="settings-section"><h3>${t('profileBio')}</h3><p>${p.bio?escapeHtml(p.bio):t('bioEmpty')}</p><div class="profile-actions-row"><button class="btn" id="bioEdit" type="button">${p.bio?t('editBio'):t('addBio')}</button>${p.bio?`<button class="btn danger-lite" id="bioDelete" type="button">${t('deleteBio')}</button>`:''}</div></section>
-      <section class="settings-section"><h3>${t('security')}</h3><div class="profile-actions-row"><button class="btn" id="changePasswordBtn" type="button">${t('changePassword')}</button><button class="btn" id="sessionsBtn" type="button">${t('activeSessions')}</button></div></section>
-      <section class="settings-section danger-zone"><h3>${t('dangerZone')}</h3><button class="btn danger" id="deleteAccountBtn" type="button">${t('deleteAccount')}</button></section>
-    </article>`;
-  $('#coverEdit').addEventListener('click',()=>imageActions('cover'));
-  $('#avatarEdit').addEventListener('click',()=>imageActions('avatar'));
-  $('#nameEdit').addEventListener('click',changeProfileName);
-  $('#bioEdit').addEventListener('click',editBio);
-  $('#bioDelete')?.addEventListener('click',deleteBio);
-  $('#changePasswordBtn').addEventListener('click',()=>openResetModal(false));
-  $('#sessionsBtn').addEventListener('click',openSessionsModal);
-  $('#deleteAccountBtn').addEventListener('click',openDeleteAccountFlow);
-}
-function openMyMods(){
-  location.hash='#mods';
-  setTimeout(()=>{ const q=$('#searchInput'); if(q && currentUser){ q.value=currentUser.name||currentUser.email||''; q.dispatchEvent(new Event('input',{bubbles:true})); } },260);
-}
-function sessionId(){ let id=localStorage.getItem('polux.session.id'); if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());localStorage.setItem('polux.session.id',id)} return id; }
-function registerSession(){ if(!currentUser) return; const key=profileKey(currentUser.uid||currentUser.email); let all={}; try{all=JSON.parse(localStorage.getItem(STORAGE.sessions)||'{}')}catch(e){}; all[key] ||= []; const id=sessionId(); const item={id, ua:navigator.userAgent, lang:navigator.language, platform:navigator.platform||'Android', last:new Date().toISOString()}; const idx=all[key].findIndex(x=>x.id===id); if(idx>=0) all[key][idx]=item; else all[key].push(item); localStorage.setItem(STORAGE.sessions,JSON.stringify(all)); }
-function openSessionsModal(){
-  registerSession(); const key=profileKey(currentUser?.uid||currentUser?.email); let all={}; try{all=JSON.parse(localStorage.getItem(STORAGE.sessions)||'{}')}catch(e){}; const list=all[key]||[];
-  const body=list.map(s=>`<div class="session-row"><div><strong>${escapeHtml(s.platform||t('unknownDevice'))}</strong><span>${escapeHtml(s.ua||'')}</span><small>${fmtDate(s.last)}</small></div><button class="btn danger-lite" data-kill-session="${s.id}">×</button></div>`).join('') || `<p>${t('noSessions')}</p>`;
-  openInfoModal(t('activeSessions'), `${body}<div class="profile-actions-row"><button class="btn danger" id="killAllSessions">${t('endAllSessions')}</button></div>`);
-  $$('[data-kill-session]').forEach(b=>b.addEventListener('click',()=>{ if(confirm(t('confirmEndSession'))){ all[key]=(all[key]||[]).filter(x=>x.id!==b.dataset.killSession); localStorage.setItem(STORAGE.sessions,JSON.stringify(all)); if(b.dataset.killSession===sessionId()){ getFirebaseAuth()?.signOut?.(); saveUser(null); closeInfoModal(); } else openSessionsModal(); }}));
-  $('#killAllSessions')?.addEventListener('click',()=>{ if(confirm(t('confirmEndAllSessions'))){ all[key]=[]; localStorage.setItem(STORAGE.sessions,JSON.stringify(all)); getFirebaseAuth()?.signOut?.(); saveUser(null); closeInfoModal(); }});
-}
-function openInfoModal(title, html){
-  let m=$('#infoModal');
-  if(!m){ document.body.insertAdjacentHTML('beforeend',`<div class="auth-modal" id="infoModal" aria-hidden="true"><div class="auth-card info-card"><button class="auth-close" id="infoClose" type="button">×</button><h2 id="infoTitle"></h2><div id="infoBody"></div></div></div>`); m=$('#infoModal'); $('#infoClose').addEventListener('click',closeInfoModal); m.addEventListener('click',e=>{if(e.target.id==='infoModal')closeInfoModal();}); }
-  $('#infoTitle').textContent=title; $('#infoBody').innerHTML=html; m.classList.add('open'); m.setAttribute('aria-hidden','false');
-}
-function closeInfoModal(){ $('#infoModal')?.classList.remove('open'); $('#infoModal')?.setAttribute('aria-hidden','true'); }
-async function openDeleteAccountFlow(){
-  const p=getMyProfile(); if(!p) return;
-  if(!confirm(t('deleteAccountWarning'))) return;
-  const pass=prompt(t('confirmPasswordToDelete'));
-  if(!pass) return;
-  p.deletedAt=new Date().toISOString(); p.deletedUntil=new Date(Date.now()+30*86400000).toISOString(); saveMyProfile(p);
-  try{
-    const auth=getFirebaseAuth();
-    if(auth?.currentUser?.delete) await auth.currentUser.delete();
-  }catch(e){ alert(t('accountSoftDeletedLocal')); }
-  getFirebaseAuth()?.signOut?.(); saveUser(null); location.hash='#home';
-}
-function renderOtherProfileDemo(){ alert(t('otherProfilesLater')); }
-function sendThanksToUser(userKey){ alert(t('thanksLater')); }
-function reportUser(userKey){ const reason=prompt(t('reportReasonPrompt')); if(reason){ const reports=JSON.parse(localStorage.getItem(STORAGE.reports)||'[]'); reports.push({userKey,reason,date:new Date().toISOString(),from:currentUser?.uid||currentUser?.email||'guest'}); localStorage.setItem(STORAGE.reports,JSON.stringify(reports)); alert(t('reportSaved')); } }
-
 
 function positionCustomSelectMenu(box){
   const trigger = $('.custom-select-trigger', box);
@@ -730,14 +669,13 @@ $('#profileMenu').addEventListener('click', e => {
   if(!action) return;
   closeProfileMenu();
   if(action === 'profile') currentUser ? location.hash = '#profile' : openAuthModal('login');
-  if(action === 'mods') openMyMods();
-  if(action === 'settings') currentUser ? location.hash = '#profile/settings' : openAuthModal('login');
+  if(action === 'mods') currentUser ? location.hash = '#my-mods' : openAuthModal('login');
+  if(action === 'settings') currentUser ? location.hash = '#profile-settings' : openAuthModal('login');
   if(action === 'logout'){ getFirebaseAuth()?.signOut?.(); saveUser(null); }
 });
 
 
 function firebaseUserToLocalUser(user){
-  ensureProfileRecord(user);
   return {
     name: user?.displayName || user?.email?.split('@')[0] || t('userRole'),
     email: user?.email || '',
@@ -955,4 +893,105 @@ enhanceCustomSelects(document);
 applyTheme();
 applyI18n();
 route();
+
+function renderProfileSettingsPage(){
+  if(!currentUser){ openAuthModal('login'); location.hash='#home'; return; }
+  const p = ensureCurrentProfile();
+  $('#app').innerHTML = `
+    <section class="page-panel narrow reveal profile-settings-page">
+      <p class="eyebrow">/profile/settings</p>
+      <h1>${t('profileSettingsTitle')}</h1>
+      <div class="profile-editor-card">
+        <button class="profile-cover editable-cover" id="coverPickerBtn" type="button" title="${t(p.cover?'replaceCover':'addCover')}">${p.cover ? `<img src="${p.cover}" alt="">` : defaultCover()}<span class="edit-dot">✎</span></button>
+        <button class="profile-big-avatar editable-avatar" id="avatarPickerBtn" type="button" title="${t(p.avatar?'replaceAvatar':'addAvatar')}">${profileAvatarHtml(p)}<span class="edit-dot">✎</span></button>
+        <div class="settings-block">
+          <label>${t('accountName')}</label>
+          <div class="inline-edit"><strong data-no-translate>${p.name}</strong><button class="icon-btn" id="editNameBtn" type="button">✎</button></div>
+          <small>${t('nameLimitHint')}</small>
+        </div>
+        <div class="settings-block">
+          <label>${t('accountBio')}</label>
+          <p class="settings-muted">${p.bio ? translateText(p.bio,currentLang) : t('noBio')}</p>
+          <div class="hero-actions"><button class="btn" id="editBioBtn" type="button">${p.bio?t('editBio'):t('addBio')}</button>${p.bio?`<button class="btn danger-soft" id="removeBioBtn" type="button">${t('removeBio')}</button>`:''}</div>
+          <small>${t('bioLimit')}</small>
+        </div>
+        <div class="settings-block"><label>${t('changePassword')}</label><p class="settings-muted">${t('passwordChangeHint')}</p><button class="btn" id="changePasswordBtn" type="button">${t('changePassword')}</button></div>
+        <div class="settings-block"><label>${t('activeSessions')}</label><p class="settings-muted">${t('sessionsHint')}</p><button class="btn" id="sessionsBtn" type="button">${t('activeSessions')}</button></div>
+        <div class="settings-block danger-zone"><label>${t('deleteAccount')}</label><p class="settings-muted">${t('deleteAccountText')}</p><button class="btn danger-soft" id="deleteAccountBtn" type="button">${t('deleteAccount')}</button></div>
+      </div>
+    </section>`;
+  $('#avatarPickerBtn').addEventListener('click', () => openImageChoice('avatar', p));
+  $('#coverPickerBtn').addEventListener('click', () => openImageChoice('cover', p));
+  $('#editNameBtn').addEventListener('click', () => openNameModal(p));
+  $('#editBioBtn').addEventListener('click', () => openBioModal(p));
+  $('#removeBioBtn')?.addEventListener('click', () => { p.bio=''; writeProfile(p); renderProfileSettingsPage(); });
+  $('#changePasswordBtn').addEventListener('click', () => openChangePasswordModal());
+  $('#sessionsBtn').addEventListener('click', () => openSessionsModal(p));
+  $('#deleteAccountBtn').addEventListener('click', () => openDeleteAccountModal(p));
+  applyI18n();
+}
+function renderMyModsPage(){
+  if(!currentUser){ openAuthModal('login'); location.hash='#home'; return; }
+  const p = ensureCurrentProfile();
+  const list = modsSource.filter(m => (m.author || '').toLowerCase() === (p.name || '').toLowerCase() || (m.author || '').toLowerCase()==='polux mods');
+  $('#app').innerHTML = `<section class="page-head page-panel"><p class="eyebrow">/my-mods</p><h1>${t('myModsTitle')}</h1><p>${t('filteredByAuthor')} <strong data-no-translate>${p.name}</strong></p></section><section class="mods-grid reveal">${list.length?list.map(m=>{const x=translateRecord(m,currentLang);return `<article class="mod-card"><span class="tag">${x.category}</span><div class="pixel-art">${x.icon}</div><h3>${x.title}</h3><p>${x.desc}</p><footer><span class="status">${x.status}</span><a class="btn" href="#mods/${x.id}" data-link>${t('open')}</a></footer></article>`}).join(''):`<div class="page-panel narrow"><p>${t('noUserMods')}</p></div>`}</section>`;
+}
+function modalShell(id, title, body){
+  let m = $('#'+id); if(m) m.remove();
+  document.body.insertAdjacentHTML('beforeend', `<div class="auth-modal open profile-modal" id="${id}" aria-hidden="false"><div class="auth-card" role="dialog"><button class="auth-close" type="button" data-close-modal="${id}">×</button><p class="eyebrow">/profile</p><h2>${title}</h2>${body}</div></div>`);
+  $('#'+id).addEventListener('click', e => { if(e.target.id===id || e.target.closest('[data-close-modal]')) $('#'+id).remove(); });
+  return $('#'+id);
+}
+function openImageChoice(kind, p){
+  const has = !!p[kind];
+  const title = kind==='avatar' ? (has?t('replaceAvatar'):t('addAvatar')) : (has?t('replaceCover'):t('addCover'));
+  const m = modalShell('imageChoiceModal', title, `<div class="auth-form"><button class="btn" id="imgFileBtn">${t('chooseFromFile')}</button><button class="btn" id="imgUrlBtn">${t('chooseFromUrl')}</button>${has?`<button class="btn danger-soft" id="imgRemoveBtn">${kind==='avatar'?t('removeAvatar'):t('removeCover')}</button>`:''}</div><input class="hidden" id="profileImageFile" type="file" accept="image/*">`);
+  $('#imgFileBtn').onclick=()=>$('#profileImageFile').click();
+  $('#profileImageFile').onchange=e=>{ const file=e.target.files?.[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{p[kind]=r.result; writeProfile(p); m.remove(); renderProfileSettingsPage();}; r.readAsDataURL(file); };
+  $('#imgUrlBtn').onclick=()=>{ const url=prompt(t('imageUrl')); if(url){p[kind]=url.trim(); writeProfile(p); m.remove(); renderProfileSettingsPage();} };
+  $('#imgRemoveBtn') && ($('#imgRemoveBtn').onclick=()=>{p[kind]=''; writeProfile(p); m.remove(); renderProfileSettingsPage();});
+}
+function nameChangeWindow(p){ const monthAgo=Date.now()-30*86400000; return (p.nameChanges||[]).filter(d=>new Date(d).getTime()>monthAgo); }
+function openNameModal(p){
+  const changes = nameChangeWindow(p);
+  const nextDate = changes.length>=2 ? new Date(new Date(changes[0]).getTime()+30*86400000) : null;
+  const body = `<form class="auth-form" id="nameForm"><p class="auth-hint">${t('nameLimitHint')}</p>${nextDate?`<div class="auth-status show warn">${t('nameLimitReached')} ${t('nameAvailableAt')} ${formatDateShort(nextDate)}</div>`:''}<label class="field"><span>${t('accountName')}</span><input id="newProfileName" maxlength="32" value="${p.name.replace(/"/g,'&quot;')}"><small class="field-error" id="nameChangeError"></small></label><button class="btn primary" ${nextDate?'disabled':''}>${t('save')}</button></form>`;
+  modalShell('nameModal', t('editName'), body);
+  $('#nameForm').onsubmit=async e=>{e.preventDefault(); const v=$('#newProfileName').value.trim(); if(!v){$('#nameChangeError').textContent=t('fieldRequired');return;} if(v.length>32){$('#nameChangeError').textContent=t('nameTooLong');return;} p.name=v; p.nameChanges=[...changes,new Date().toISOString()]; writeProfile(p); try{ await getFirebaseAuth()?.currentUser?.updateProfile?.({displayName:v}); }catch(_){} $('#nameModal').remove(); renderProfileSettingsPage();};
+}
+function openBioModal(p){
+  modalShell('bioModal', p.bio?t('editBio'):t('addBio'), `<form class="auth-form" id="bioForm"><label class="field"><span>${t('accountBio')}</span><textarea id="bioText" maxlength="70">${p.bio||''}</textarea><small class="field-error" id="bioError"></small></label><button class="btn primary">${t('save')}</button></form>`);
+  $('#bioForm').onsubmit=e=>{e.preventDefault(); const v=$('#bioText').value.trim(); if(v.length>70){$('#bioError').textContent=t('bioTooLong');return;} p.bio=v; writeProfile(p); $('#bioModal').remove(); renderProfileSettingsPage();};
+}
+function openChangePasswordModal(){
+  modalShell('changePasswordModal', t('changePassword'), `<form class="auth-form" id="changePasswordForm"><p class="auth-hint">${t('passwordChangeHint')}</p><label class="field"><span>${t('newPassword')}</span><div class="password-box"><input id="profileNewPassword" type="password"><button class="password-eye" type="button" data-toggle-password="profileNewPassword">◉</button></div><small class="field-error" id="profileNewPasswordError"></small></label><label class="field"><span>${t('confirmNewPassword')}</span><div class="password-box"><input id="profileNewPasswordConfirm" type="password"><button class="password-eye" type="button" data-toggle-password="profileNewPasswordConfirm">◉</button></div><small class="field-error" id="profileNewPasswordConfirmError"></small></label><button class="btn primary">${t('resetPasswordButton')}</button></form>`);
+  $('#changePasswordForm').onsubmit=async e=>{e.preventDefault(); const a=$('#profileNewPassword').value,b=$('#profileNewPasswordConfirm').value; if(a.length<6){$('#profileNewPasswordError').textContent=t('passwordTooShort');return;} if(a!==b){$('#profileNewPasswordConfirmError').textContent=t('passwordsDontMatch');return;} try{ await getFirebaseAuth()?.currentUser?.updatePassword(a); alert(t('passwordChangedLogout')); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#changePasswordModal').remove(); }catch(err){ alert(authErrorMessage(err)); }};
+}
+function openSessionsModal(p){
+  touchSession(); p=readProfile();
+  const rows=(p.sessions||[]).map(s=>`<div class="session-row"><div><strong>${s.current?t('currentSession'):s.browser}</strong><small>${s.browser} · ${s.platform} · ${formatDateShort(s.lastSeen)}<br>${s.userAgent}</small></div><button class="icon-btn" data-kill-session="${s.id}">×</button></div>`).join('');
+  modalShell('sessionsModal', t('activeSessions'), `<div class="auth-form"><p class="auth-hint">${t('sessionsHint')}</p>${rows}<button class="btn danger-soft" id="killAllSessions">${t('closeAllSessions')}</button></div>`);
+  $$('[data-kill-session]').forEach(b=>b.onclick=()=>{ if(confirm(t('confirmCloseSession'))){ const p=readProfile(); p.sessions=(p.sessions||[]).filter(s=>s.id!==b.dataset.killSession); writeProfile(p); if(b.dataset.killSession===sessionId()){getFirebaseAuth()?.signOut?.(); saveUser(null);} $('#sessionsModal').remove(); }});
+  $('#killAllSessions').onclick=()=>{ if(confirm(t('confirmCloseAll'))){ p.sessions=[]; writeProfile(p); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#sessionsModal').remove(); }};
+}
+function openDeleteAccountModal(p){
+  modalShell('deleteAccountModal', t('deleteAccountTitle'), `<form class="auth-form" id="deleteAccountForm"><p class="auth-hint">${t('deleteAccountText')}</p><label class="field"><span>${t('password')}</span><div class="password-box"><input id="deletePassword" type="password"><button class="password-eye" type="button" data-toggle-password="deletePassword">◉</button></div><small class="field-error" id="deletePasswordError"></small></label><button class="btn danger-soft">${t('deleteAccount')}</button></form>`);
+  $('#deleteAccountForm').onsubmit=async e=>{e.preventDefault(); if(!$('#deletePassword').value){$('#deletePasswordError').textContent=t('fieldRequired');return;} p.deletedAt=new Date().toISOString(); writeProfile(p); alert(t('accountDeleted')); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#deleteAccountModal').remove(); location.hash='#home';};
+}
+function openCommentsModal(p){
+  const items=(p.comments||[]).length ? p.comments.map(c=>`<a class="session-row" href="${c.url||'#mods'}"><span>${translateText(c.text||'',currentLang)}</span><small>${formatDateShort(c.createdAt)}</small></a>`).join('') : `<p>${t('noComments')}</p>`;
+  modalShell('commentsModal', `${t('comments')} · ${(p.comments||[]).length}`, `<div class="auth-form">${items}</div>`);
+}
+function openReportModal(p){
+  modalShell('reportModal', t('reportUser'), `<form class="auth-form" id="reportForm"><label class="field"><span>${t('reportReason')}</span><select id="reportReason"><option>${t('reportSpam')}</option><option>${t('reportInsult')}</option><option>${t('reportFake')}</option><option>${t('reportRules')}</option><option value="other">${t('reportOther')}</option></select></label><label class="field hidden" id="reportOtherWrap"><span>${t('reportDetails')}</span><textarea id="reportDetails"></textarea></label><button class="btn primary">${t('sendMessage')}</button></form>`);
+  $('#reportReason').onchange=()=>$('#reportOtherWrap').classList.toggle('hidden',$('#reportReason').value!=='other');
+  $('#reportForm').onsubmit=e=>{e.preventDefault(); p.reports.push({from:currentUser.uid, reason:$('#reportReason').value, details:$('#reportDetails')?.value||'', createdAt:new Date().toISOString()}); writeProfile(p); alert(t('reportSent')); $('#reportModal').remove();};
+}
+function sendThanks(p){
+  if(!currentUser || p.uid===currentUser.uid){alert(t('cantThankSelf'));return;}
+  const month = new Date().toISOString().slice(0,7); const key=currentUser.uid+'_'+month; const sent=JSON.parse(localStorage.getItem('polux.thanks.sent')||'{}');
+  if(sent[p.uid] || Object.keys(sent).filter(k=>k.endsWith('_'+month)).length>=3){alert(t('thanksLimit'));return;}
+  if(confirm(t('thanksConfirm'))){ sent[p.uid]=true; sent[key]=true; localStorage.setItem('polux.thanks.sent',JSON.stringify(sent)); p.rating+=10; writeProfile(p); alert(t('thanksSent')); renderProfile(p.uid); }
+}
+
 checkResetActionFromUrl();
