@@ -15,72 +15,82 @@
     return dbInstance;
   }
 
-  async function getUserProfile(uid){
+  function clean(data){ return JSON.parse(JSON.stringify(data || {})); }
+  function serverStamped(data){ return {...clean(data), updatedAt:new Date().toISOString()}; }
+
+  async function getDoc(collection, id){
     const db = getDb();
-    if(!db || !uid) return null;
-    const snap = await db.collection('users').doc(uid).get();
-    return snap.exists ? snap.data() : null;
+    if(!db || !collection || !id) return null;
+    const snap = await db.collection(collection).doc(id).get();
+    return snap.exists ? {id:snap.id, ...snap.data()} : null;
   }
 
-  async function getAllUserProfiles(limit=80){
+  async function setDoc(collection, id, data, merge=true){
     const db = getDb();
-    if(!db) return [];
-    const snap = await db.collection('users').orderBy('updatedAt','desc').limit(limit).get();
-    return snap.docs.map(doc => ({uid:doc.id, ...doc.data()}));
-  }
-
-  async function updateUserProfile(uid, patch){
-    const db = getDb();
-    if(!db || !uid || !patch) return null;
-    const clean = JSON.parse(JSON.stringify({...patch, updatedAt:new Date().toISOString()}));
-    await db.collection('users').doc(uid).set(clean, {merge:true});
-    return clean;
-  }
-
-  async function saveUserProfile(profile){
-    const db = getDb();
-    if(!db || !profile || !profile.uid) return null;
-    const clean = JSON.parse(JSON.stringify(profile));
-    clean.updatedAt = new Date().toISOString();
-    await db.collection('users').doc(profile.uid).set(clean, {merge:true});
-    return clean;
-  }
-
-  async function saveAdminAction(action){
-    const db = getDb();
-    if(!db || !action) return null;
-    const payload = {...action, createdAt:new Date().toISOString()};
-    await db.collection('adminActions').add(payload);
+    if(!db || !collection || !id || !data) return null;
+    const payload = serverStamped(data);
+    await db.collection(collection).doc(id).set(payload, {merge});
     return payload;
   }
 
-  async function saveUserReport(report){
+  async function addDoc(collection, data){
     const db = getDb();
-    if(!db || !report) return null;
-    const payload = {...report, status:'new', createdAt:new Date().toISOString()};
-    await db.collection('reports').add(payload);
-    return payload;
+    if(!db || !collection || !data) return null;
+    const payload = {...clean(data), createdAt:data.createdAt || new Date().toISOString(), updatedAt:new Date().toISOString()};
+    const ref = await db.collection(collection).add(payload);
+    return {id:ref.id, ...payload};
   }
 
-  async function updateSiteSettings(settings){
+  async function listDocs(collection, options={}){
     const db = getDb();
-    if(!db || !settings) return null;
-    await db.collection('site').doc('settings').set({...settings, updatedAt:new Date().toISOString()}, {merge:true});
-    return settings;
+    if(!db || !collection) return [];
+    let ref = db.collection(collection);
+    if(options.where){
+      for(const w of options.where){ ref = ref.where(w[0], w[1], w[2]); }
+    }
+    if(options.orderBy) ref = ref.orderBy(options.orderBy[0], options.orderBy[1] || 'desc');
+    if(options.limit) ref = ref.limit(options.limit);
+    const snap = await ref.get();
+    return snap.docs.map(doc => ({id:doc.id, ...doc.data()}));
   }
 
-  window.PoluxDbService = {
-    configReady,
-    getDb,
-    getUserProfile,
-    saveUserProfile,
-    getAllUserProfiles,
-    updateUserProfile,
-    saveAdminAction,
-    saveUserReport,
-    updateSiteSettings,
-    async saveNewsPost(post){ const db=getDb(); if(!db||!post)return null; const payload={...post,updatedAt:new Date().toISOString()}; await db.collection('news').doc(post.id||String(Date.now())).set(payload,{merge:true}); return payload; },
-    async saveFeedbackTicket(ticket){ const db=getDb(); if(!db||!ticket)return null; const payload={...ticket,createdAt:ticket.createdAt||new Date().toISOString()}; await db.collection('tickets').add(payload); return payload; },
-    async saveNotification(uid,notification){ const db=getDb(); if(!db||!uid||!notification)return null; await db.collection('users').doc(uid).collection('notifications').add({...notification,createdAt:new Date().toISOString()}); return notification; }
+  async function deleteDoc(collection, id){
+    const db = getDb();
+    if(!db || !collection || !id) return null;
+    await db.collection(collection).doc(id).delete();
+    return true;
+  }
+
+  // Legacy-compatible helpers already used by earlier versions of app.js.
+  async function getUserProfile(uid){ return getDoc('users', uid); }
+  async function getAllUserProfiles(limit=80){ return listDocs('users', {orderBy:['updatedAt','desc'], limit}); }
+  async function updateUserProfile(uid, patch){ return setDoc('users', uid, patch, true); }
+  async function saveUserProfile(profile){ return profile?.uid ? setDoc('users', profile.uid, profile, true) : null; }
+  async function saveAdminAction(action){ return addDoc('adminActions', action); }
+  async function saveUserReport(report){ return addDoc('reports', {...report, status:report.status || 'new'}); }
+  async function updateSiteSettings(settings){ return setDoc('siteSettings', 'main', settings, true); }
+
+  // Normalized Polux schema helpers.
+  const api = {
+    configReady, getDb, getDoc, setDoc, addDoc, listDocs, deleteDoc,
+    getUserProfile, saveUserProfile, getAllUserProfiles, updateUserProfile,
+    saveAdminAction, saveUserReport, updateSiteSettings,
+    getSiteSettings: () => getDoc('siteSettings', 'main'),
+    saveSiteSettings: settings => setDoc('siteSettings', 'main', settings, true),
+    listRoles: () => listDocs('roles', {orderBy:['level','desc']}),
+    saveRole: role => setDoc('roles', role.id, role, true),
+    deleteRole: id => deleteDoc('roles', id),
+    listPublishedMods: limit => listDocs('mods', {where:[['status','in',['published','approved']]], orderBy:['publishedAt','desc'], limit}),
+    saveMod: mod => setDoc('mods', mod.id, mod, true),
+    listPublishedNews: limit => listDocs('news', {where:[['status','==','published']], orderBy:['publishedAt','desc'], limit}),
+    saveNews: item => setDoc('news', item.id, item, true),
+    saveComment: comment => setDoc('comments', comment.id, comment, true),
+    saveRating: rating => setDoc('ratings', `${rating.userId}_${rating.itemId}`, rating, true),
+    saveFavorite: fav => setDoc('favorites', `${fav.userId}_${fav.itemId}`, fav, true),
+    deleteFavorite: (userId, itemId) => deleteDoc('favorites', `${userId}_${itemId}`),
+    saveTicket: ticket => setDoc('tickets', ticket.id, ticket, true),
+    saveNotification: note => setDoc('notifications', note.id, note, true)
   };
+
+  window.PoluxDbService = api;
 })();

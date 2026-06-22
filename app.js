@@ -2,1369 +2,627 @@ const $ = (q, root = document) => root.querySelector(q);
 const $$ = (q, root = document) => [...root.querySelectorAll(q)];
 
 const STORAGE = {
-  theme: 'polux.theme', crt: 'polux.crt', lang: 'polux.lang', user: 'polux.user'
+  theme: 'polux.theme', crt: 'polux.crt', lang: 'polux.lang', user: 'polux.user', db: 'polux.normalized.db.v2', localUsers: 'polux.local.users'
 };
 
 const LANGS = ['uk','ru','en','pl','de','es','fr'];
 const DEFAULT_LANG = 'uk';
 const languageNames = {uk:'Українська',ru:'Русский',en:'English',pl:'Polski',de:'Deutsch',es:'Español',fr:'Français'};
-const NO_TRANSLATE_FIELDS = new Set(['id','slug','code','url','email','author','authors','creator','username','brand','file','filename','icon']);
-const NO_TRANSLATE_TERMS = ['Polux Mods','PLX','T-4A','FS Mobile 20','Farming Simulator Mobile','Farming Simulator Mobile 20','Telegram','Discord','GitHub','Email'];
+const OWNER_EMAILS = ['vitaliysh0705@gmail.com'];
+const GAME_VERSIONS = ['FS Mobile 20','FS Mobile 23','FS Mobile 25'];
+const ROLE_LEVELS = ['roleUser','roleVerified','rolePublisher','roleModerator','roleAdministrator','roleOwner'];
+const ROLE_WEIGHT = Object.fromEntries(ROLE_LEVELS.map((r,i)=>[r,i]));
 
-/*
-  Polux translation core.
-  Еталонна мова тільки українська: весь текст сайту, модів і майбутніх заявок
-  зберігається в одному джерелі українською. Російська додана як звичайна мова
-  сайту в списку мов. Усі інші мови отримують текст через translateText().
-
-  Для майбутнього бекенду: поля author, id, slug, code, url, email та елементи з
-  data-no-translate не перекладаються. Опис, назва, статус, категорія, вимоги,
-  changelog, коментарі й заявки можна проганяти через PoluxTranslator.translateContent().
-*/
-const UI_UK = {
-  loading:'Завантаження модуля...',navHome:'Головна',navMods:'Моди',navAbout:'Проєкт',navContact:"Зв'язок",crtOff:'CRT: увімк.',crtOn:'CRT: вимк.',
-  heroTitle:'Мінімалістичний гараж модів у старому піксельному стилі.',
-  heroText:'Polux Mods — база якісних модифікацій, техніки, карт і оновлень для мобільного Farming Simulator.',
-  viewMods:'Дивитись моди',learnMore:'Детальніше',featureDesign:'Чистий дизайн',
-  featureDesignText:'Мінімум шуму, максимум атмосфери: сітка, піксельні акценти, точні відступи.',
-  featureSpa:'SPA-переходи',featureSpaText:'Сторінки перемикаються без перезавантаження браузера, з ретро-анімацією.',
-  featureFuture:'Онлайн-система',featureFutureText:'Каталог, профілі та авторизація працюють як єдина система Polux Mods.',
-  modsTitle:'Каталог модів',modsText:'Офіційний каталог модів Polux Mods з технікою, картами, інструментами та оновленнями для FS Mobile.',searchPlaceholder:'Пошук мода...',allCategories:'Усі категорії',
-  aboutTitle:'Про Polux Mods',aboutText:'Polux Mods — повноцінний сайт для модів Farming Simulator Mobile: адаптивний каталог, акаунти користувачів, профілі та зручна навігація.',
-  contactTitle:"Зв'язок",contactText:'Зв’яжіться з командою Polux Mods, запропонуйте мод, повідомте про проблему або надішліть ідею для розвитку проєкту.',
-  namePlaceholder:"Ваше ім'я",emailPlaceholder:'Email',messagePlaceholder:'Повідомлення',sendMessage:'Надіслати',open:'Відкрити',download:'Завантажити',status:'Статус',category:'Категорія',version:'Версія',game:'Гра',back:'Назад до каталогу',
-  universalTemplate:'Сторінка мода містить опис, версію, статус, вимоги, список змін і посилання на завантаження.',
-  loginShort:'Вхід',profileTitle:'Профіль',loginTitle:'Вхід',registerTitle:'Реєстрація',authHint:'Увійдіть у Polux Mods або створіть акаунт для профілю, обраних модів і майбутніх можливостей спільноти.',loginTab:'Вхід',registerTab:'Реєстрація',displayName:"Ім\'я профілю",password:'Пароль',loginButton:'Увійти',registerButton:'Створити акаунт',logout:'Вийти',profileGuest:'Ви ще не увійшли.',openLogin:'Увійти або зареєструватись',profileEmail:'Email',profileRole:'Роль',userRole:'Користувач',userRole:'Користувач',avatarFuture:'Аватарка профілю автоматично береться з Google-акаунта або профілю користувача.',menuProfile:'Профіль',menuMyMods:'Мої моди',menuSettings:'Налаштування',menuLogout:'Вихід',confirmPassword:'Підтвердження пароля',showPassword:'Показати пароль',hidePassword:'Сховати пароль',fieldRequired:'Це поле обов’язкове.',emailInvalid:'Введіть коректний email у форматі name@example.com.',passwordsDontMatch:'Паролі не збігаються.',passwordTooShort:'Пароль має містити мінімум 6 символів.',emailVerificationSent:'Ми надіслали лист підтвердження на вашу пошту. Перейдіть за посиланням у листі, потім натисніть «Я вже підтвердив».',verifyEmailBeforeLogin:'Спочатку підтвердіть електронну пошту. Ми можемо надіслати лист ще раз.',resendVerification:'Надіслати лист ще раз',checkVerification:'Я вже підтвердив',verificationStillPending:'Пошта ще не підтверджена. Перевірте лист у папці «Вхідні» або «Спам».',verificationSuccess:'Пошта підтверджена. Вхід виконано.',verificationResent:'Лист підтвердження надіслано ще раз.',firebaseConfigMissing:'Firebase ще не налаштований. Заповни POLUX_FIREBASE_CONFIG в index.html.',authWrongCredentials:'Неправильний email або пароль.',authEmailInUse:'Цей email вже зареєстрований.',authNetworkError:'Немає з’єднання або Firebase недоступний.',emailNotVerifiedBadge:'Пошта очікує підтвердження',emailVerifiedBadge:'Пошта підтверджена'
+const UI = {
+  uk: {
+    loading:'Завантаження модуля...', navHome:'Головна', navMods:'Моди', navNews:'Новини', navAbout:'Про нас', navContact:"Зв'язок", navFeedback:'Зворотній зв’язок',
+    crtOff:'CRT: увімк.', crtOn:'CRT: вимк.', loginShort:'Вхід', menuProfile:'Мій профіль', menuNotifications:'Сповіщення', menuFavorites:'Обране', menuMyMods:'Мої моди', menuSettings:'Налаштування', menuAdmin:'Адмін-панель', menuLogout:'Вихід', loginOrRegister:'Увійти або зареєструватись',
+    heroTitle:'Офіційний гараж Polux Mods для Farming Simulator Mobile.', heroText:'Каталог модів, новини, профілі, обране, рейтинг, звернення та модерація — в одному адаптивному сайті.', viewMods:'Дивитись моди', learnMore:'Детальніше', viewAll:'Переглянути всі',
+    newMods:'Нові моди', popularMods:'Найбільш популярні', latestNews:'Новини', noPublishedMods:'Опубліковані моди ще готуються. Після публікації через адмін-панель вони автоматично з’являться тут.', noPublishedNews:'Новини ще готуються до релізу.',
+    modsTitle:'Каталог модів', modsText:'Усі схвалені або опубліковані адміністрацією модифікації Polux Mods.', searchPlaceholder:'Пошук мода...', allCategories:'Усі категорії', sortNewest:'Нові спочатку', sortRating:'За рейтингом', open:'Перейти', download:'Завантажити', back:'Назад',
+    aboutTitle:'Про Polux Mods', aboutText:'Polux Mods — сайт спільноти для модів Farming Simulator Mobile. Проєкт об’єднує каталог модифікацій, новини, профілі користувачів, систему звернень, обране та модерацію контенту.',
+    feedbackTitle:'Зворотній зв’язок', feedbackText:'Надішліть пропозицію або звернення до команди Polux Mods.', feedbackLogin:'Розділ доступний тільки для зареєстрованих користувачів.', submitTicket:'Подати звернення', myTickets:'Мої звернення', topic:'Тема', topicOther:'Інше', ticketMessage:'Текст звернення', ticketLimit:'до 300 символів', addImages:'Посилання на зображення', sendMessage:'Надіслати', ticketSent:'Звернення надіслано.', noTickets:'Звернень поки немає.',
+    newsTitle:'Стрічка новин', newsText:'Останні публікації Polux Mods.', comments:'Коментарі', addComment:'Додати коментар', reply:'Відповісти', edit:'Редагувати', delete:'Видалити', report:'Поскаржитись', deletedComment:'Коментар було видалено', writeComment:'Напишіть коментар...', commentLogin:'Щоб писати коментарі, увійдіть у акаунт.',
+    category:'Категорія', version:'Версія', game:'Гра', status:'Статус', author:'Автор', devAuthor:'Автор розробки', gameVersions:'Сумісні версії гри', rating:'Рейтинг', favoriteAdd:'Додати до обраного', favoriteRemove:'Видалити з обраного', favoritesTitle:'Обране', noFavorites:'Обраних модів поки немає.',
+    profileTitle:'Профіль', profileGuest:'Ви ще не увійшли.', openLogin:'Увійти або зареєструватись', profileEmail:'Email', profileRole:'Роль', profileId:'ID профілю', lastOnline:'Останній онлайн', registeredAt:'Зареєстровано', userRating:'Рейтинг', recoverAccount:'Відновити акаунт', recoverAccountText:'Акаунт позначено як видалений. Протягом 30 днів його можна відновити.', accountRecovered:'Акаунт відновлено.', profileSettings:'Налаштування профілю', displayName:"Ім'я профілю", accountBio:'Опис профілю', save:'Зберегти', cancel:'Скасувати',
+    notificationsTitle:'Сповіщення', noNotifications:'Немає нових сповіщень.', markAllRead:'Позначити всі прочитаними', notificationRole:'Адміністрація змінила вашу роль.', notificationReply:'Відповідь адміністрації на звернення.', notificationComment:'Новий коментар у вашій публікації.', notificationThanks:'Користувач подякував вам.',
+    loginTitle:'Вхід', registerTitle:'Реєстрація', authHint:'Увійдіть у Polux Mods або створіть акаунт для профілю, обраних модів і майбутніх можливостей спільноти.', loginTab:'Вхід', registerTab:'Реєстрація', password:'Пароль', confirmPassword:'Підтвердження пароля', loginButton:'Увійти', registerButton:'Створити акаунт', forgotPassword:'Забули пароль?', orText:'або', googleLogin:'Увійти через Google', googleRegister:'Зареєструватись через Google', fieldRequired:'Це поле обов’язкове.', emailInvalid:'Введіть коректний email.', passwordTooShort:'Пароль має містити мінімум 6 символів.', passwordsDontMatch:'Паролі не збігаються.', authWrongCredentials:'Неправильний email або пароль.', authEmailInUse:'Цей email вже зареєстрований.', authNetworkError:'Немає з’єднання або Firebase недоступний.', firebaseConfigMissing:'Firebase недоступний, увімкнено локальний режим.', emailVerificationSent:'Лист підтвердження надіслано.', verifyEmailBeforeLogin:'Спочатку підтвердіть пошту.', resendVerification:'Надіслати лист ще раз', checkVerification:'Я вже підтвердив', resetTitle:'Відновлення пароля', resetEmailText:'Введіть email, і ми надішлемо посилання для відновлення пароля.', sendResetLink:'Надіслати посилання', resetEmailSent:'Посилання надіслано.', newPassword:'Новий пароль', confirmNewPassword:'Підтвердження нового пароля', resetPasswordButton:'Змінити пароль', showPassword:'Показати пароль', hidePassword:'Сховати пароль',
+    adminPanelTitle:'Адмін-панель', adminPanelText:'Блочна система керування сайтом Polux Mods.', adminOnly:'Цей розділ доступний лише адміністраторам і модераторам.', blockPublication:'Публікація', blockUsers:'Модерація користувачів', blockTickets:'Скарги і пропозиції', blockSuggested:'Запропоновані моди', blockSiteSettings:'Налаштування сайту',
+    publishArea:'Область публікування', editHome:'Редагування головної сторінки', publishNews:'Публікація новин', publishMods:'Публікація модів', clear:'Очистити', publish:'Опублікувати', title:'Назва', shortDescription:'Короткий опис', fullText:'Повний текст', mainImage:'Головне зображення URL', galleryUrls:'Галерея URL, через кому', downloadUrl:'URL завантаження', addBlock:'Додати блок', blockType:'Тип блоку', textBlock:'Текст', imageBlock:'Фото', pollBlock:'Опитування', blocksLimit:'До 10 блоків в одному дописі.', published:'Опубліковано.', saved:'Збережено.',
+    userSearchPlaceholder:'ID, Email або Ім’я', avatar:'Аватарка', name:'Ім’я', email:'Email', role:'Роль', actions:'Дії', viewProfile:'Переглянути профіль', mute:'Замутити', unmute:'Розмутити', ban:'Заблокувати', unban:'Розблокувати', editRating:'Редагування рейтингу', editRoles:'Редагування ролей', deleteAccount:'Видалити акаунт', restoreAccount:'Відновити акаунт', softDeleted:'Акаунт м’яко видалено на 30 днів.', points:'Бали', reason:'Причина', confirm:'Підтвердити',
+    complaint:'Скарга', feedback:'Зворотний зв’язок', new:'Нове', inProgress:'В роботі', closed:'Закрите', closeTicket:'Позначити як закрите', workTicket:'Позначити як в роботі', deleteTicket:'Видалити звернення', object:'Об’єкт', answerAuthor:'Відповісти автору', ticketClosedInfo:'Звернення закрите: редагування заблоковане, але аналітика доступна.',
+    suggestedMods:'Запропоновані моди', review:'Переглянути', approve:'Схвалити', reject:'Відхилити', goAuthor:'Перейти на профіль автора', noSuggested:'Запропонованих модів поки немає.',
+    holidayTheme:'Новорічне оформлення', maintenance:'Режим технічного обслуговування', maintenanceText:'Сайт знаходиться на сервісному обслуговуванні. Вибачте за незручності.', bannerActive:'Інформаційний банер', bannerText:'Текст оголошення', bannerUrl:'URL-посилання', roles:'Ролі', addRole:'Додати роль', viewRoleUsers:'Переглянути користувачів', changeRole:'Змінити роль', deleteRole:'Видалити роль', roleName:'Назва ролі', roleColor:'Колір ролі', permissions:'Права', usersWithRole:'Користувачі з роллю', noUsers:'Користувачів не знайдено.', confirmDeleteRole:'Видалити цю роль?',
+    roleOwner:'Власник', roleAdministrator:'Адміністратор', roleModerator:'Модератор', rolePublisher:'Автор публікацій', roleVerified:'Перевірений', roleUser:'Користувач', permPublish:'Публікація контенту', permModerateUsers:'Модерація користувачів', permModerateReports:'Модерація скарг', permModerateMods:'Модерація модів', permManageSettings:'Керування сайтом', permManageRoles:'Керування ролями',
+    imageZoom:'Натисніть, щоб відкрити на весь екран', poll:'Опитування', vote:'Голосувати', thank:'Подякувати', reportSent:'Скаргу надіслано.', objectLink:'Посилання на об’єкт', dateAdded:'Дата додавання', more:'Ще', activeBanner:'Оголошення', localMode:'Локальний режим', dbSchema:'Структура БД нормалізована в колекції users, mods, news, comments, ratings, favorites, tickets, reports, notifications, roles та siteSettings.'
+  }
 };
 
-
-Object.assign(UI_UK, {
-  navNews:'Новини', navFeedback:'Зворотній зв\'язок', menuFavorites:'Обране', menuNotifications:'Сповіщення',
-  viewAll:'Переглянути всі', latestMods:'Нові моди', popularMods:'Найбільш популярні', latestNews:'Новини',
-  addFavorite:'Додати до обраного', removeFavorite:'Видалити з обраного', complain:'Поскаржитись', go:'Перейти',
-  author:'Автор', added:'Дата додавання', rating:'Рейтинг', comments:'Коментарі', writeComment:'Написати коментар', reply:'Відповісти', editComment:'Редагувати коментар', deleteComment:'Видалити коментар', commentDeleted:'Коментар було видалено', up:'Вгору', down:'Вниз',
-  feedbackTitle:'Зворотній зв\'язок', sendTicket:'Подати звернення', myTickets:'Мої звернення', ticketTheme:'Тема', other:'Інше', ticketText:'Текст звернення', uploadImages:'Завантажити зображення', ticketSent:'Звернення збережено',
-  notificationsTitle:'Сповіщення', favoritesTitle:'Обране', noItems:'Поки що порожньо.', maintenanceText:'Сайт знаходиться на сервісному обслуговуванні. Вибачте за незручності',
-  publish:'Публікація', homeEdit:'Редагування головної сторінки', publishNews:'Публікація новин', publishMods:'Публікація модів', clear:'Очистити', publishBtn:'Опублікувати',
-  reportsModeration:'Модерація скарг і пропозицій', suggestedMods:'Модерація запропонованих модів', siteSettings:'Налаштування сайту',
-  newStatus:'Нове', inWork:'В роботі', closed:'Закрите', approve:'Схвалити', reject:'Відхилити', edit:'Редагувати',
-  seasonal:'Новорічне оформлення', maintenance:'Технічне обслуговування', headerBanner:'Інформаційний банер', bannerText:'Текст оголошення', bannerUrl:'URL-посилання', roleSettings:'Ролі та права', addRole:'Додати роль',
-  modVersion:'Версія моду', modCreator:'Автор розробки', compatibleVersions:'Сумісні версії гри', downloadUrl:'Посилання на завантаження', shortDesc:'Короткий опис', fullDesc:'Повний опис'
-});
-
-const TRANSLATION_MEMORY = {
-  ru: {loading:'Загрузка модуля...',navHome:'Главная',navMods:'Моды',navAbout:'Проект',navContact:'Связь',crtOff:'CRT: вкл.',crtOn:'CRT: выкл.',heroTitle:'Минималистичный гараж модов в старом пиксельном стиле.',heroText:'Polux Mods — будущая база качественных модификаций, техники, карт и обновлений для мобильного Farming Simulator.',viewMods:'Смотреть моды',learnMore:'Подробнее',featureDesign:'Чистый дизайн',featureDesignText:'Минимум шума, максимум атмосферы: сетка, пиксельные акценты, точные отступы.',featureSpa:'SPA-переходы',featureSpaText:'Страницы переключаются без перезагрузки браузера, с ретро-анимацией.',featureFuture:'Онлайн-система',featureFutureText:'Сейчас моды находятся в JS-массиве, но структура подготовлена для API, аккаунтов и админ-панели.',modsTitle:'Каталог модов',modsText:'Официальный каталог модов Polux Mods с техникой, картами, инструментами и обновлениями для FS Mobile.',searchPlaceholder:'Поиск мода...',allCategories:'Все категории',aboutTitle:'О Polux Mods',aboutText:'Polux Mods — полноценный сайт для модов Farming Simulator Mobile: адаптивный каталог, аккаунты пользователей, профили и удобная навигация.',contactTitle:'Связь',contactText:'Здесь позже можно добавить форму, Telegram, Discord, GitHub или админ-панель для заявок на моды.',namePlaceholder:'Ваше имя',emailPlaceholder:'Email',messagePlaceholder:'Сообщение',sendMessage:'Надіслати',open:'Открыть',download:'Скачать',status:'Статус',category:'Категория',version:'Версия',game:'Игра',back:'Назад к каталогу',universalTemplate:'Страница мода содержит описание, версию, статус, требования, список изменений и ссылки на скачивание.',loginShort:'Вход',profileTitle:'Профиль',loginTitle:'Вход',registerTitle:'Регистрация',authHint:'Войдите в Polux Mods или создайте аккаунт для профиля, избранных модов и возможностей сообщества.',loginTab:'Вход',registerTab:'Регистрация',displayName:'Имя профиля',password:'Пароль',loginButton:'Войти',registerButton:'Создать аккаунт',logout:'Выйти',profileGuest:'Вы еще не вошли.',openLogin:'Войти или зарегистрироваться',profileEmail:'Email',profileRole:'Роль',userRole:'Пользователь',userRole:'Пользователь',avatarFuture:'Аватар профиля автоматически берётся из Google-аккаунта или профиля пользователя.',menuProfile:'Профиль',menuMyMods:'Мои моды',menuSettings:'Настройки',menuLogout:'Выход',confirmPassword:'Подтверждение пароля',showPassword:'Показать пароль',hidePassword:'Скрыть пароль',fieldRequired:'Это поле обязательно.',emailInvalid:'Введите корректный email в формате name@example.com.',passwordsDontMatch:'Пароли не совпадают.',passwordTooShort:'Пароль должен содержать минимум 6 символов.',emailVerificationSent:'Мы отправили письмо подтверждения на вашу почту. Перейдите по ссылке в письме, затем нажмите «Я уже подтвердил».',verifyEmailBeforeLogin:'Сначала подтвердите электронную почту. Мы можем отправить письмо еще раз.',resendVerification:'Отправить письмо еще раз',checkVerification:'Я уже подтвердил',verificationStillPending:'Почта еще не подтверждена. Проверьте письмо во «Входящих» или «Спаме».',verificationSuccess:'Почта подтверждена. Вход выполнен.',verificationResent:'Письмо подтверждения отправлено еще раз.',firebaseConfigMissing:'Firebase еще не настроен. Заполните POLUX_FIREBASE_CONFIG в index.html.',authWrongCredentials:'Неправильный email или пароль.',authEmailInUse:'Этот email уже зарегистрирован.',authNetworkError:'Нет соединения или Firebase недоступен.',emailNotVerifiedBadge:'Почта ожидает подтверждения',emailVerifiedBadge:'Почта подтверждена'},
-  en: {loading:'Loading module...',navHome:'Home',navMods:'Mods',navAbout:'Project',navContact:'Contact',crtOff:'CRT: on',crtOn:'CRT: off',heroTitle:'A minimalist mod garage in an old pixel style.',heroText:'Polux Mods is a future database of quality modifications, vehicles, maps and updates for mobile Farming Simulator.',viewMods:'View mods',learnMore:'Learn more',featureDesign:'Clean design',featureDesignText:'Less noise, more atmosphere: grid, pixel accents and precise spacing.',featureSpa:'SPA transitions',featureSpaText:'Pages switch without browser reloads, using a retro animation.',featureFuture:'Database-ready',featureFutureText:'Mods are currently stored in a JS array, but the structure is ready for API, accounts and an admin panel.',modsTitle:'Mods catalog',modsText:'A catalog template that can later be filled from a database.',searchPlaceholder:'Search mod...',allCategories:'All categories',aboutTitle:'About Polux Mods',aboutText:'This is a starter site for Farming Simulator Mobile mods. It is built from scratch: responsive, fast, and ready for a future database and account system.',contactTitle:'Contact',contactText:'A form, Telegram, Discord, GitHub or an admin panel for mod requests can be added here later.',namePlaceholder:'Your name',emailPlaceholder:'Email',messagePlaceholder:'Message',sendMessage:'Send',open:'Open',download:'Download',status:'Status',category:'Category',version:'Version',game:'Game',back:'Back to catalog',universalTemplate:'This is a universal mod page template: screenshots, requirements, versions, changelog, download links and comments can be loaded from a database later.',loginShort:'Login',profileTitle:'Profile',loginTitle:'Login',registerTitle:'Registration',authHint:'Sign in to Polux Mods or create an account for your profile, favorite mods, and community features.',loginTab:'Login',registerTab:'Register',displayName:'Profile name',password:'Password',loginButton:'Log in',registerButton:'Create account',logout:'Log out',profileGuest:'You are not logged in yet.',openLogin:'Log in or register',profileEmail:'Email',profileRole:'Role',userRole:'User',userRole:'User',avatarFuture:'The profile avatar is taken automatically from your Google account or user profile.',menuProfile:'Profile',menuMyMods:'My mods',menuSettings:'Settings',menuLogout:'Log out',confirmPassword:'Confirm password',showPassword:'Show password',hidePassword:'Hide password',fieldRequired:'This field is required.',emailInvalid:'Enter a valid email in the format name@example.com.',passwordsDontMatch:'Passwords do not match.',passwordTooShort:'Password must be at least 6 characters.',emailVerificationSent:'We sent a verification email. Open the link in that email, then press “I have confirmed”.',verifyEmailBeforeLogin:'Please verify your email first. We can send the verification email again.',resendVerification:'Send email again',checkVerification:'I have confirmed',verificationStillPending:'Email is not verified yet. Check Inbox or Spam.',verificationSuccess:'Email verified. You are logged in.',verificationResent:'Verification email sent again.',firebaseConfigMissing:'Firebase is not configured yet. Fill POLUX_FIREBASE_CONFIG in index.html.',authWrongCredentials:'Wrong email or password.',authEmailInUse:'This email is already registered.',authNetworkError:'No connection or Firebase is unavailable.',emailNotVerifiedBadge:'Email verification pending',emailVerifiedBadge:'Email verified'},
-  pl: {navHome:'Główna',navMods:'Mody',navAbout:'Projekt',navContact:'Kontakt',loading:'Ładowanie modułu...',crtOff:'CRT: wł.',crtOn:'CRT: wył.',heroTitle:'Minimalistyczny garaż modów w starym pikselowym stylu.',heroText:'Polux Mods to przyszła baza jakościowych modyfikacji, maszyn, map i aktualizacji do mobilnego Farming Simulator.',viewMods:'Zobacz mody',learnMore:'Więcej',modsTitle:'Katalog modów',searchPlaceholder:'Szukaj moda...',allCategories:'Wszystkie kategorie',open:'Otwórz',download:'Pobierz',back:'Powrót do katalogu',confirmPassword:'Potwierdź hasło',showPassword:'Pokaż hasło',hidePassword:'Ukryj hasło',fieldRequired:'To pole jest wymagane.',emailInvalid:'Wpisz poprawny email w formacie name@example.com.',passwordsDontMatch:'Hasła nie są takie same.',passwordTooShort:'Hasło musi mieć co najmniej 6 znaków.',emailVerificationSent:'Wysłaliśmy wiadomość weryfikacyjną. Otwórz link w mailu, potem kliknij „Już potwierdziłem”.',verifyEmailBeforeLogin:'Najpierw potwierdź email. Możemy wysłać wiadomość ponownie.',resendVerification:'Wyślij ponownie',checkVerification:'Już potwierdziłem',verificationStillPending:'Email nie jest jeszcze potwierdzony. Sprawdź Odebrane lub Spam.',verificationSuccess:'Email potwierdzony. Zalogowano.',verificationResent:'Wiadomość weryfikacyjna została wysłana ponownie.',firebaseConfigMissing:'Firebase nie jest jeszcze skonfigurowany. Uzupełnij POLUX_FIREBASE_CONFIG w index.html.',authWrongCredentials:'Nieprawidłowy email lub hasło.',authEmailInUse:'Ten email jest już zarejestrowany.',authNetworkError:'Brak połączenia albo Firebase jest niedostępny.',emailNotVerifiedBadge:'Email oczekuje na potwierdzenie',emailVerifiedBadge:'Email potwierdzony'},
-  de: {navHome:'Start',navMods:'Mods',navAbout:'Projekt',navContact:'Kontakt',loading:'Modul wird geladen...',crtOff:'CRT: ein',crtOn:'CRT: aus',heroTitle:'Eine minimalistische Mod-Garage im alten Pixel-Stil.',heroText:'Polux Mods ist eine zukünftige Datenbank für hochwertige Mods, Fahrzeuge, Karten und Updates für Farming Simulator Mobile.',viewMods:'Mods ansehen',learnMore:'Mehr erfahren',modsTitle:'Mod-Katalog',searchPlaceholder:'Mod suchen...',allCategories:'Alle Kategorien',open:'Öffnen',download:'Herunterladen',back:'Zurück zum Katalog',confirmPassword:'Passwort bestätigen',showPassword:'Passwort anzeigen',hidePassword:'Passwort ausblenden',fieldRequired:'Dieses Feld ist erforderlich.',emailInvalid:'Gib eine gültige E-Mail im Format name@example.com ein.',passwordsDontMatch:'Die Passwörter stimmen nicht überein.',passwordTooShort:'Das Passwort muss mindestens 6 Zeichen lang sein.',emailVerificationSent:'Wir haben eine Bestätigungs-E-Mail gesendet. Öffne den Link und klicke danach auf „Ich habe bestätigt“.',verifyEmailBeforeLogin:'Bitte bestätige zuerst deine E-Mail. Wir können die E-Mail erneut senden.',resendVerification:'E-Mail erneut senden',checkVerification:'Ich habe bestätigt',verificationStillPending:'E-Mail ist noch nicht bestätigt. Prüfe Posteingang oder Spam.',verificationSuccess:'E-Mail bestätigt. Du bist angemeldet.',verificationResent:'Bestätigungs-E-Mail erneut gesendet.',firebaseConfigMissing:'Firebase ist noch nicht konfiguriert. Fülle POLUX_FIREBASE_CONFIG in index.html aus.',authWrongCredentials:'Falsche E-Mail oder falsches Passwort.',authEmailInUse:'Diese E-Mail ist bereits registriert.',authNetworkError:'Keine Verbindung oder Firebase ist nicht verfügbar.',emailNotVerifiedBadge:'E-Mail-Bestätigung ausstehend',emailVerifiedBadge:'E-Mail bestätigt'},
-  es: {navHome:'Inicio',navMods:'Mods',navAbout:'Proyecto',navContact:'Contacto',loading:'Cargando módulo...',crtOff:'CRT: activado',crtOn:'CRT: desactivado',heroTitle:'Un garaje minimalista de mods con estilo píxel antiguo.',heroText:'Polux Mods será una base de datos de modificaciones, vehículos, mapas y actualizaciones de calidad para Farming Simulator Mobile.',viewMods:'Ver mods',learnMore:'Más detalles',modsTitle:'Catálogo de mods',searchPlaceholder:'Buscar mod...',allCategories:'Todas las categorías',open:'Abrir',download:'Descargar',back:'Volver al catálogo',confirmPassword:'Confirmar contraseña',showPassword:'Mostrar contraseña',hidePassword:'Ocultar contraseña',fieldRequired:'Este campo es obligatorio.',emailInvalid:'Introduce un email válido con el formato name@example.com.',passwordsDontMatch:'Las contraseñas no coinciden.',passwordTooShort:'La contraseña debe tener al menos 6 caracteres.',emailVerificationSent:'Enviamos un email de verificación. Abre el enlace del email y luego pulsa “Ya confirmé”.',verifyEmailBeforeLogin:'Primero confirma tu email. Podemos enviar el email otra vez.',resendVerification:'Enviar otra vez',checkVerification:'Ya confirmé',verificationStillPending:'El email aún no está verificado. Revisa Entrada o Spam.',verificationSuccess:'Email verificado. Sesión iniciada.',verificationResent:'Email de verificación enviado otra vez.',firebaseConfigMissing:'Firebase aún no está configurado. Rellena POLUX_FIREBASE_CONFIG en index.html.',authWrongCredentials:'Email o contraseña incorrectos.',authEmailInUse:'Este email ya está registrado.',authNetworkError:'Sin conexión o Firebase no está disponible.',emailNotVerifiedBadge:'Email pendiente de verificación',emailVerifiedBadge:'Email verificado'},
-  fr: {navHome:'Accueil',navMods:'Mods',navAbout:'Projet',navContact:'Contact',loading:'Chargement du module...',crtOff:'CRT : activé',crtOn:'CRT : désactivé',heroTitle:'Un garage de mods minimaliste au style pixel rétro.',heroText:'Polux Mods sera une base de données de modifications, véhicules, cartes et mises à jour de qualité pour Farming Simulator Mobile.',viewMods:'Voir les mods',learnMore:'Détails',modsTitle:'Catalogue de mods',searchPlaceholder:'Rechercher un mod...',allCategories:'Toutes les catégories',open:'Ouvrir',download:'Télécharger',back:'Retour au catalogue',confirmPassword:'Confirmer le mot de passe',showPassword:'Afficher le mot de passe',hidePassword:'Masquer le mot de passe',fieldRequired:'Ce champ est obligatoire.',emailInvalid:'Saisis un email valide au format name@example.com.',passwordsDontMatch:'Les mots de passe ne correspondent pas.',passwordTooShort:'Le mot de passe doit contenir au moins 6 caractères.',emailVerificationSent:'Nous avons envoyé un email de vérification. Ouvre le lien, puis appuie sur « J’ai confirmé ».',verifyEmailBeforeLogin:'Confirme d’abord ton email. Nous pouvons renvoyer le message.',resendVerification:'Renvoyer l’email',checkVerification:'J’ai confirmé',verificationStillPending:'L’email n’est pas encore confirmé. Vérifie la boîte de réception ou les spams.',verificationSuccess:'Email confirmé. Connexion effectuée.',verificationResent:'Email de vérification renvoyé.',firebaseConfigMissing:'Firebase n’est pas encore configuré. Remplis POLUX_FIREBASE_CONFIG dans index.html.',authWrongCredentials:'Email ou mot de passe incorrect.',authEmailInUse:'Cet email est déjà enregistré.',authNetworkError:'Pas de connexion ou Firebase indisponible.',emailNotVerifiedBadge:'Email en attente de confirmation',emailVerifiedBadge:'Email confirmé'}
+const OVERRIDES = {
+  ru: {navHome:'Главная',navMods:'Моды',navNews:'Новости',navAbout:'О нас',navFeedback:'Обратная связь',loginShort:'Вход',menuProfile:'Мой профиль',menuNotifications:'Уведомления',menuFavorites:'Избранное',menuMyMods:'Мои моды',menuSettings:'Настройки',menuAdmin:'Админ-панель',menuLogout:'Выход',viewMods:'Смотреть моды',learnMore:'Подробнее',viewAll:'Смотреть все',modsTitle:'Каталог модов',newsTitle:'Лента новостей',feedbackTitle:'Обратная связь',aboutTitle:'О Polux Mods',adminPanelTitle:'Админ-панель',blockPublication:'Публикация',blockUsers:'Модерация пользователей',blockTickets:'Жалобы и предложения',blockSuggested:'Предложенные моды',blockSiteSettings:'Настройки сайта',save:'Сохранить',cancel:'Отмена',publish:'Опубликовать',open:'Перейти',download:'Скачать',comments:'Комментарии',favoriteAdd:'Добавить в избранное',favoriteRemove:'Удалить из избранного',noPublishedMods:'Опубликованные моды пока готовятся.',noPublishedNews:'Новости готовятся к релизу.',roleOwner:'Владелец',roleAdministrator:'Администратор',roleModerator:'Модератор',rolePublisher:'Автор публикаций',roleVerified:'Проверенный',roleUser:'Пользователь'},
+  en: {navHome:'Home',navMods:'Mods',navNews:'News',navAbout:'About',navFeedback:'Feedback',loginShort:'Sign in',menuProfile:'My profile',menuNotifications:'Notifications',menuFavorites:'Favorites',menuMyMods:'My mods',menuSettings:'Settings',menuAdmin:'Admin panel',menuLogout:'Log out',heroTitle:'Official Polux Mods garage for Farming Simulator Mobile.',heroText:'Mods catalog, news, profiles, favorites, ratings, feedback and moderation in one responsive site.',viewMods:'View mods',learnMore:'Learn more',viewAll:'View all',newMods:'New mods',popularMods:'Most popular',latestNews:'News',modsTitle:'Mods catalog',modsText:'All mods approved or published by the Polux Mods administration.',newsTitle:'News feed',newsText:'Latest Polux Mods posts.',feedbackTitle:'Feedback',feedbackText:'Send a suggestion or request to the Polux Mods team.',aboutTitle:'About Polux Mods',aboutText:'Polux Mods is a community website for Farming Simulator Mobile mods.',adminPanelTitle:'Admin panel',adminPanelText:'Block-based site management system.',adminOnly:'This section is available only to administrators and moderators.',blockPublication:'Publication',blockUsers:'User moderation',blockTickets:'Reports and feedback',blockSuggested:'Suggested mods',blockSiteSettings:'Site settings',save:'Save',cancel:'Cancel',publish:'Publish',clear:'Clear',open:'Open',download:'Download',comments:'Comments',addComment:'Add comment',reply:'Reply',edit:'Edit',delete:'Delete',report:'Report',favoriteAdd:'Add to favorites',favoriteRemove:'Remove from favorites',noPublishedMods:'Published mods are being prepared.',noPublishedNews:'News is being prepared.',roleOwner:'Owner',roleAdministrator:'Administrator',roleModerator:'Moderator',rolePublisher:'Publisher',roleVerified:'Verified',roleUser:'User'},
+  pl: {navHome:'Główna',navMods:'Mody',navNews:'Aktualności',navAbout:'O nas',navFeedback:'Kontakt',loginShort:'Login',viewMods:'Zobacz mody',learnMore:'Więcej',viewAll:'Zobacz wszystko',modsTitle:'Katalog modów',newsTitle:'Aktualności',feedbackTitle:'Kontakt',adminPanelTitle:'Panel admina',save:'Zapisz',cancel:'Anuluj',publish:'Opublikuj',open:'Otwórz',download:'Pobierz',comments:'Komentarze',roleAdministrator:'Administrator',roleModerator:'Moderator',roleUser:'Użytkownik'},
+  de: {navHome:'Start',navMods:'Mods',navNews:'News',navAbout:'Über uns',navFeedback:'Feedback',loginShort:'Login',viewMods:'Mods ansehen',learnMore:'Mehr erfahren',viewAll:'Alle anzeigen',modsTitle:'Mod-Katalog',newsTitle:'News',feedbackTitle:'Feedback',adminPanelTitle:'Adminbereich',save:'Speichern',cancel:'Abbrechen',publish:'Veröffentlichen',open:'Öffnen',download:'Download',comments:'Kommentare',roleAdministrator:'Administrator',roleModerator:'Moderator',roleUser:'Benutzer'},
+  es: {navHome:'Inicio',navMods:'Mods',navNews:'Noticias',navAbout:'Sobre nosotros',navFeedback:'Comentarios',loginShort:'Entrar',viewMods:'Ver mods',learnMore:'Más detalles',viewAll:'Ver todo',modsTitle:'Catálogo de mods',newsTitle:'Noticias',feedbackTitle:'Comentarios',adminPanelTitle:'Panel admin',save:'Guardar',cancel:'Cancelar',publish:'Publicar',open:'Abrir',download:'Descargar',comments:'Comentarios',roleAdministrator:'Administrador',roleModerator:'Moderador',roleUser:'Usuario'},
+  fr: {navHome:'Accueil',navMods:'Mods',navNews:'Actualités',navAbout:'À propos',navFeedback:'Retour',loginShort:'Connexion',viewMods:'Voir les mods',learnMore:'Détails',viewAll:'Tout voir',modsTitle:'Catalogue des mods',newsTitle:'Actualités',feedbackTitle:'Retour',adminPanelTitle:'Admin',save:'Enregistrer',cancel:'Annuler',publish:'Publier',open:'Ouvrir',download:'Télécharger',comments:'Commentaires',roleAdministrator:'Administrateur',roleModerator:'Modérateur',roleUser:'Utilisateur'}
 };
+for(const lang of Object.keys(OVERRIDES)) UI[lang] = {...UI.uk, ...OVERRIDES[lang]};
 
-
-
-Object.assign(UI_UK, {
-  adminPanel:'Адмін панель',
-  adminPanelTitle:'Адмін панель',
-  adminPanelText:'Інструменти модерації користувачів, ролей, скарг і стану сайту.',
-  adminOnly:'Доступ тільки для адміністратора або модератора.',
-  userModeration:'Модерація користувачів',
-  userSearchPlaceholder:'UID, email або ім’я користувача',
-  targetUser:'Користувач',
-  adminAction:'Дія',
-  adminActionBan:'Заблокувати',
-  adminActionMute:'Видати мут',
-  adminActionUnban:'Зняти блокування',
-  adminActionUnmute:'Зняти мут',
-  adminActionDelete:'Позначити акаунт видаленим',
-  adminActionRole:'Видати роль',
-  adminRole:'Роль',
-  roleAdministrator:'Адміністратор',
-  roleModerator:'Модератор',
-  roleUser:'Користувач',
-  ratingRoles:'Звання рейтингу',
-  roleRookie:'Новачок',
-  roleMechanic:'Механік',
-  roleDriver:'Водій',
-  roleFarmer:'Фермер',
-  roleMaster:'Майстер модів',
-  roleLegend:'Легенда Polux',
-  moderationReason:'Причина',
-  moderationSaved:'Дію модерації збережено в базі.',
-  moderationLocalSaved:'Дію збережено локально. Firebase/Firestore недоступний.',
-  complaints:'Скарги',
-  complaintsHint:'Тут будуть скарги користувачів для майбутньої адмін-панелі.',
-  siteControls:'Керування сайтом',
-  siteMaintenance:'Технічне обслуговування',
-  siteHolidayTheme:'Святкова тема',
-  publishModsSoon:'Публікація модів і редагування блоків сайту буде додана пізніше.',
-  loginOrRegister:'Вхід / Реєстрація'
-});
-
-Object.assign(UI_UK, {
-  googleLogin:'Увійти через Google', googleRegister:'Зареєструватися через Google', orText:'або', forgotPassword:'Забули пароль?',
-  resetTitle:'Відновлення пароля', resetEmailText:'Введіть email, і ми надішлемо посилання для відновлення пароля.', sendResetLink:'Надіслати посилання',
-  newPassword:'Новий пароль', confirmNewPassword:'Підтвердження нового пароля', resetPasswordButton:'Змінити пароль', resetEmailSent:'Лист для відновлення пароля надіслано. Перевірте пошту.', resetPasswordSuccess:'Пароль успішно змінено. Тепер можна увійти з новим паролем.', resetLinkInvalid:'Посилання для відновлення недійсне або застаріле.', authPopupClosed:'Вхід через Google скасовано.', googleLoginFailed:'Не вдалося увійти через Google.'
-});
-const AUTH_EXTRA_TRANSLATIONS = {
-  ru:{googleLogin:'Войти через Google',googleRegister:'Зарегистрироваться через Google',orText:'или',forgotPassword:'Забыли пароль?',resetTitle:'Восстановление пароля',resetEmailText:'Введите email, и мы отправим ссылку для восстановления пароля.',sendResetLink:'Отправить ссылку',newPassword:'Новый пароль',confirmNewPassword:'Подтверждение нового пароля',resetPasswordButton:'Изменить пароль',resetEmailSent:'Письмо для восстановления пароля отправлено. Проверьте почту.',resetPasswordSuccess:'Пароль успешно изменен. Теперь можно войти с новым паролем.',resetLinkInvalid:'Ссылка восстановления недействительна или устарела.',authPopupClosed:'Вход через Google отменен.',googleLoginFailed:'Не удалось войти через Google.'},
-  en:{googleLogin:'Continue with Google',googleRegister:'Sign up with Google',orText:'or',forgotPassword:'Forgot password?',resetTitle:'Password recovery',resetEmailText:'Enter your email and we will send a password reset link.',sendResetLink:'Send reset link',newPassword:'New password',confirmNewPassword:'Confirm new password',resetPasswordButton:'Change password',resetEmailSent:'Password reset email sent. Check your inbox.',resetPasswordSuccess:'Password changed successfully. You can now log in with the new password.',resetLinkInvalid:'The reset link is invalid or expired.',authPopupClosed:'Google sign-in was cancelled.',googleLoginFailed:'Could not sign in with Google.'},
-  pl:{googleLogin:'Zaloguj przez Google',googleRegister:'Zarejestruj przez Google',orText:'albo',forgotPassword:'Nie pamiętasz hasła?',resetTitle:'Odzyskiwanie hasła',resetEmailText:'Wpisz email, a wyślemy link do resetowania hasła.',sendResetLink:'Wyślij link',newPassword:'Nowe hasło',confirmNewPassword:'Potwierdź nowe hasło',resetPasswordButton:'Zmień hasło',resetEmailSent:'Email resetowania hasła został wysłany. Sprawdź pocztę.',resetPasswordSuccess:'Hasło zostało zmienione. Możesz się zalogować nowym hasłem.',resetLinkInvalid:'Link resetowania jest nieprawidłowy lub wygasł.',authPopupClosed:'Logowanie przez Google anulowane.',googleLoginFailed:'Nie udało się zalogować przez Google.'},
-  de:{googleLogin:'Mit Google anmelden',googleRegister:'Mit Google registrieren',orText:'oder',forgotPassword:'Passwort vergessen?',resetTitle:'Passwort wiederherstellen',resetEmailText:'Gib deine E-Mail ein, wir senden einen Link zum Zurücksetzen.',sendResetLink:'Link senden',newPassword:'Neues Passwort',confirmNewPassword:'Neues Passwort bestätigen',resetPasswordButton:'Passwort ändern',resetEmailSent:'E-Mail zum Zurücksetzen wurde gesendet. Prüfe deinen Posteingang.',resetPasswordSuccess:'Passwort erfolgreich geändert. Du kannst dich nun anmelden.',resetLinkInvalid:'Der Reset-Link ist ungültig oder abgelaufen.',authPopupClosed:'Google-Anmeldung abgebrochen.',googleLoginFailed:'Anmeldung mit Google fehlgeschlagen.'},
-  es:{googleLogin:'Entrar con Google',googleRegister:'Registrarse con Google',orText:'o',forgotPassword:'¿Olvidaste la contraseña?',resetTitle:'Recuperar contraseña',resetEmailText:'Introduce tu email y enviaremos un enlace para restablecer la contraseña.',sendResetLink:'Enviar enlace',newPassword:'Nueva contraseña',confirmNewPassword:'Confirmar nueva contraseña',resetPasswordButton:'Cambiar contraseña',resetEmailSent:'Email de recuperación enviado. Revisa tu correo.',resetPasswordSuccess:'Contraseña cambiada correctamente. Ya puedes entrar con la nueva contraseña.',resetLinkInvalid:'El enlace no es válido o ha caducado.',authPopupClosed:'Inicio con Google cancelado.',googleLoginFailed:'No se pudo iniciar sesión con Google.'},
-  fr:{googleLogin:'Continuer avec Google',googleRegister:'S’inscrire avec Google',orText:'ou',forgotPassword:'Mot de passe oublié ?',resetTitle:'Récupération du mot de passe',resetEmailText:'Saisis ton email et nous enverrons un lien de réinitialisation.',sendResetLink:'Envoyer le lien',newPassword:'Nouveau mot de passe',confirmNewPassword:'Confirmer le nouveau mot de passe',resetPasswordButton:'Changer le mot de passe',resetEmailSent:'Email de réinitialisation envoyé. Vérifie ta boîte mail.',resetPasswordSuccess:'Mot de passe modifié. Tu peux maintenant te connecter.',resetLinkInvalid:'Le lien de réinitialisation est invalide ou expiré.',authPopupClosed:'Connexion Google annulée.',googleLoginFailed:'Impossible de se connecter avec Google.'}
+const NO_TRANSLATE_TERMS = ['Polux Mods','PLX','FS Mobile','Farming Simulator Mobile','Firebase','GitHub','Google','Email','T-4A'];
+const TRANSLATE_WORDS = {
+  en: {'Назва':'Title','Категорія':'Category','Версія':'Version','Автор':'Author','Новини':'News','Моди':'Mods','Профіль':'Profile','Налаштування':'Settings','Зберегти':'Save'},
+  ru: {'Назва':'Название','Категорія':'Категория','Версія':'Версия','Автор':'Автор','Новини':'Новости','Моди':'Моды','Профіль':'Профиль','Налаштування':'Настройки','Зберегти':'Сохранить'},
+  pl: {'Назва':'Nazwa','Категорія':'Kategoria','Версія':'Wersja','Автор':'Autor','Новини':'Aktualności','Моди':'Mody'},
+  de: {'Назва':'Titel','Категорія':'Kategorie','Версія':'Version','Автор':'Autor','Новини':'News','Моди':'Mods'},
+  es: {'Назва':'Título','Категорія':'Categoría','Версія':'Versión','Автор':'Autor','Новини':'Noticias','Моди':'Mods'},
+  fr: {'Назва':'Titre','Категорія':'Catégorie','Версія':'Version','Автор':'Auteur','Новини':'Actualités','Моди':'Mods'}
 };
-Object.entries(AUTH_EXTRA_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
-
-
-// Profile module translations: immutable UI labels are localized here.
-const PROFILE_UI_UK = {
-  profileSettingsTitle:'Налаштування профілю', profileViewTitle:'Мій профіль', editProfile:'Налаштування', myProfile:'Мій профіль', myModsTitle:'Мої моди',
-  addAvatar:'Додати аватарку', replaceAvatar:'Замінити аватарку', removeAvatar:'Видалити аватарку', addCover:'Додати фон', replaceCover:'Замінити фон', removeCover:'Видалити фон',
-  chooseFromFile:'З файлу', chooseFromUrl:'З посилання', imageUrl:'Посилання на зображення', save:'Зберегти', cancel:'Скасувати', deleteText:'Видалити', replace:'Замінити', add:'Додати',
-  accountName:'Ім’я акаунту', editName:'Змінити ім’я', nameLimitHint:'Ім’я можна змінити не більше 2 разів на місяць.', nameLimitReached:'Ліміт зміни імені вичерпано.', nameAvailableAt:'Наступна зміна буде доступна:', nameTooLong:'Ім’я не може бути довшим за 32 символи.',
-  accountBio:'Опис акаунту', addBio:'Додати опис', editBio:'Змінити опис', removeBio:'Видалити опис', bioLimit:'Опис може містити не більше 70 символів.', bioTooLong:'Опис не може бути довшим за 70 символів.', noBio:'Опис ще не додано.',
-  changePassword:'Змінити пароль', passwordChangeHint:'Після зміни пароля буде виконано вихід з акаунта.', currentPassword:'Поточний пароль', passwordChangedLogout:'Пароль змінено. Потрібно увійти ще раз.',
-  activeSessions:'Активні сесії', sessionsHint:'Сесії фіксуються сайтом Polux Mods для цього браузера. Повне завершення інших пристроїв потребує серверної перевірки Firestore/Cloud Functions.', currentSession:'Поточна сесія', closeSession:'Завершити сесію', closeAllSessions:'Завершити всі', confirmCloseSession:'Завершити цю сесію?', confirmCloseAll:'Завершити всі сесії? Ви вийдете з акаунта на цьому пристрої.',
-  deleteAccount:'Видалити акаунт', deleteAccountTitle:'Видалення акаунта', deleteAccountText:'Акаунт буде позначено як видалений. Його можна відновити протягом 30 днів. Після цього дані можуть бути остаточно видалені.', confirmPasswordToDelete:'Підтвердіть пароль для видалення акаунта.', accountDeleted:'Акаунт позначено як видалений. Ви вийшли з системи.', recoverAccount:'Відновити акаунт', recoverAccountText:'Якщо акаунт був видалений менше 30 днів тому, його можна відновити після входу.', accountRecovered:'Акаунт відновлено.',
-  userTitles:'Звання', titleUser:'Користувач', titleVerified:'Підтверджений акаунт', titleAuthor:'Автор модів', lastOnline:'Останній онлайн', registeredAt:'Дата реєстрації', registeredFor:'Зареєстрований вже', userRating:'Рейтинг користувача', userMods:'Моди користувача', viewUserMods:'Переглянути моди', comments:'Коментарі', viewComments:'Переглянути коментарі', noComments:'Коментарів поки немає.',
-  reportUser:'Поскаржитись', thanksUser:'Надіслати подяку', reportReason:'Причина скарги', reportSpam:'Спам або реклама', reportInsult:'Образи або токсична поведінка', reportFake:'Фейковий профіль або обман', reportRules:'Порушення правил сайту', reportOther:'Інше', reportDetails:'Деталі скарги', reportSent:'Скаргу збережено для адмін-панелі.', thanksConfirm:'Надіслати подяку цьому користувачу? Це додасть +10 до рейтингу.', thanksSent:'Подяку надіслано. Рейтинг користувача підвищено.', thanksLimit:'Ліміт подяк вичерпано або цьому користувачу вже надсилалась подяка.', cantThankSelf:'Не можна надіслати подяку самому собі.',
-  defaultCover:'Стандартний фон профілю', accountActions:'Дії акаунта', month:'місяць', day:'день', days:'днів', today:'сьогодні', never:'невідомо', backToProfile:'Назад до профілю', noUserMods:'У цього користувача поки немає модів у базі.', filteredByAuthor:'Фільтр автора активний:', openSettings:'Відкрити налаштування', signOut:'Вийти'
-};
-Object.assign(UI_UK, PROFILE_UI_UK);
-const PROFILE_TRANSLATIONS = {
-  ru:{profileSettingsTitle:'Настройки профиля',profileViewTitle:'Мой профиль',editProfile:'Настройки',myProfile:'Мой профиль',myModsTitle:'Мои моды',addAvatar:'Добавить аватар',replaceAvatar:'Заменить аватар',removeAvatar:'Удалить аватар',addCover:'Добавить фон',replaceCover:'Заменить фон',removeCover:'Удалить фон',chooseFromFile:'Из файла',chooseFromUrl:'По ссылке',imageUrl:'Ссылка на изображение',save:'Сохранить',cancel:'Отмена',deleteText:'Удалить',replace:'Заменить',add:'Добавить',accountName:'Имя аккаунта',editName:'Изменить имя',nameLimitHint:'Имя можно изменить не больше 2 раз в месяц.',nameLimitReached:'Лимит смены имени исчерпан.',nameAvailableAt:'Следующая смена будет доступна:',nameTooLong:'Имя не может быть длиннее 32 символов.',accountBio:'Описание аккаунта',addBio:'Добавить описание',editBio:'Изменить описание',removeBio:'Удалить описание',bioLimit:'Описание может содержать не больше 70 символов.',bioTooLong:'Описание не может быть длиннее 70 символов.',noBio:'Описание еще не добавлено.',changePassword:'Изменить пароль',passwordChangeHint:'После смены пароля будет выполнен выход из аккаунта.',currentPassword:'Текущий пароль',passwordChangedLogout:'Пароль изменен. Нужно войти заново.',activeSessions:'Активные сессии',currentSession:'Текущая сессия',closeSession:'Завершить сессию',closeAllSessions:'Завершить все',confirmCloseSession:'Завершить эту сессию?',confirmCloseAll:'Завершить все сессии? Вы выйдете из аккаунта на этом устройстве.',deleteAccount:'Удалить аккаунт',deleteAccountTitle:'Удаление аккаунта',deleteAccountText:'Аккаунт будет отмечен как удаленный. Его можно восстановить в течение 30 дней.',confirmPasswordToDelete:'Подтвердите пароль для удаления аккаунта.',accountDeleted:'Аккаунт отмечен как удаленный. Вы вышли из системы.',recoverAccount:'Восстановить аккаунт',recoverAccountText:'Если аккаунт был удален меньше 30 дней назад, его можно восстановить после входа.',accountRecovered:'Аккаунт восстановлен.',userTitles:'Звания',titleUser:'Пользователь',titleVerified:'Подтвержденный аккаунт',titleAuthor:'Автор модов',lastOnline:'Последний онлайн',registeredAt:'Дата регистрации',registeredFor:'Зарегистрирован уже',userRating:'Рейтинг пользователя',userMods:'Моды пользователя',viewUserMods:'Посмотреть моды',comments:'Комментарии',viewComments:'Посмотреть комментарии',noComments:'Комментариев пока нет.',reportUser:'Пожаловаться',thanksUser:'Отправить благодарность',reportReason:'Причина жалобы',reportSpam:'Спам или реклама',reportInsult:'Оскорбления или токсичное поведение',reportFake:'Фейковый профиль или обман',reportRules:'Нарушение правил сайта',reportOther:'Другое',reportDetails:'Детали жалобы',reportSent:'Жалоба сохранена для админ-панели.',thanksConfirm:'Отправить благодарность этому пользователю? Это добавит +10 к рейтингу.',thanksSent:'Благодарность отправлена. Рейтинг повышен.',thanksLimit:'Лимит благодарностей исчерпан или этому пользователю уже отправлялась благодарность.',cantThankSelf:'Нельзя отправить благодарность самому себе.',defaultCover:'Стандартный фон профиля',accountActions:'Действия аккаунта',month:'месяц',day:'день',days:'дней',today:'сегодня',never:'неизвестно',backToProfile:'Назад к профилю',noUserMods:'У этого пользователя пока нет модов в базе.',filteredByAuthor:'Фильтр автора активен:',openSettings:'Открыть настройки',signOut:'Выйти'},
-  en:{profileSettingsTitle:'Profile settings',profileViewTitle:'My profile',editProfile:'Settings',myProfile:'My profile',myModsTitle:'My mods',addAvatar:'Add avatar',replaceAvatar:'Replace avatar',removeAvatar:'Remove avatar',addCover:'Add cover',replaceCover:'Replace cover',removeCover:'Remove cover',chooseFromFile:'From file',chooseFromUrl:'From URL',imageUrl:'Image URL',save:'Save',cancel:'Cancel',deleteText:'Delete',replace:'Replace',add:'Add',accountName:'Account name',editName:'Change name',nameLimitHint:'You can change your name up to 2 times per month.',nameLimitReached:'Name change limit reached.',nameAvailableAt:'Next change will be available:',nameTooLong:'Name cannot be longer than 32 characters.',accountBio:'Account bio',addBio:'Add bio',editBio:'Edit bio',removeBio:'Remove bio',bioLimit:'Bio can contain up to 70 characters.',bioTooLong:'Bio cannot be longer than 70 characters.',noBio:'Bio has not been added yet.',changePassword:'Change password',passwordChangeHint:'After changing the password you will be signed out.',currentPassword:'Current password',passwordChangedLogout:'Password changed. Please sign in again.',activeSessions:'Active sessions',currentSession:'Current session',closeSession:'End session',closeAllSessions:'End all',confirmCloseSession:'End this session?',confirmCloseAll:'End all sessions? You will be signed out on this device.',deleteAccount:'Delete account',deleteAccountTitle:'Delete account',deleteAccountText:'The account will be marked as deleted. It can be restored within 30 days.',confirmPasswordToDelete:'Confirm your password to delete the account.',accountDeleted:'Account marked as deleted. You have been signed out.',recoverAccount:'Recover account',recoverAccountText:'If the account was deleted less than 30 days ago, it can be restored after sign-in.',accountRecovered:'Account recovered.',userTitles:'Titles',titleUser:'User',titleVerified:'Verified account',titleAuthor:'Mod author',lastOnline:'Last online',registeredAt:'Registration date',registeredFor:'Registered for',userRating:'User rating',userMods:'User mods',viewUserMods:'View mods',comments:'Comments',viewComments:'View comments',noComments:'No comments yet.',reportUser:'Report user',thanksUser:'Send thanks',reportReason:'Report reason',reportSpam:'Spam or ads',reportInsult:'Insults or toxic behavior',reportFake:'Fake profile or fraud',reportRules:'Site rules violation',reportOther:'Other',reportDetails:'Report details',reportSent:'Report saved for the admin panel.',thanksConfirm:'Send thanks to this user? This adds +10 rating.',thanksSent:'Thanks sent. User rating increased.',thanksLimit:'Thanks limit reached or thanks already sent to this user.',cantThankSelf:'You cannot thank yourself.',defaultCover:'Default profile cover',accountActions:'Account actions',month:'month',day:'day',days:'days',today:'today',never:'unknown',backToProfile:'Back to profile',noUserMods:'This user has no mods in the database yet.',filteredByAuthor:'Author filter active:',openSettings:'Open settings',signOut:'Sign out'}
-};
-Object.entries(PROFILE_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
-
-Object.assign(UI_UK, {
-  profileId:'ID профілю', adminUserSearch:'Пошук користувача...', adminPickAction:'Виберіть дію', adminMenu:'Меню', moderateUser:'Модерувати', openUserProfile:'Профіль користувача', adminQuickActions:'Швидке адміністрування', adminUsersList:'Користувачі сайту', adminNoUsers:'Користувачів ще немає.', roleSavedToDb:'Роль і дія збережені в базі даних.', userListSynced:'Список підтягнуто з бази даних.', cloudImageSaved:'Фото збережено в профілі Firestore.', cloudUnavailable:'Firebase недоступний — зміни тимчасово збережені локально.', userIdHint:'Короткий публічний номер акаунта Polux Mods.'
-});
-
-['pl','de','es','fr'].forEach(lang => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, PROFILE_TRANSLATIONS.en));
-
-const GLOSSARY = {
-  ru: {'Моди':'Моды','модів':'модов','мода':'мода','Каталог':'Каталог','Усі категорії':'Все категории','Трактори':'Тракторы','Причепи':'Прицепы','Карти':'Карты','Інструменти':'Инструменты','В розробці':'В разработке','Шаблон':'Шаблон','Концепт':'Концепт','Заплановано':'Запланировано','гусеничного трактора':'гусеничного трактора','з відвальним обладнанням':'с отвальным оборудованием','для майбутньої бази даних':'для будущей базы данных'},
-  en: {'Моди':'Mods','модів':'mods','мода':'mod','Каталог':'Catalog','Усі категорії':'All categories','Трактори':'Tractors','Причепи':'Trailers','Карти':'Maps','Інструменти':'Tools','В розробці':'In progress','Шаблон':'Template','Концепт':'Concept','Заплановано':'Planned','гусеничного трактора':'tracked tractor','з відвальним обладнанням':'with blade equipment','для майбутньої бази даних':'for the future database'},
-  pl: {'Моди':'Mody','модів':'modów','Трактори':'Ciągniki','Причепи':'Przyczepy','Карти':'Mapy','Інструменти':'Narzędzia','В розробці':'W trakcie','Шаблон':'Szablon','Концепт':'Koncepcja','Заплановано':'Planowane'},
-  de: {'Моди':'Mods','модів':'Mods','Трактори':'Traktoren','Причепи':'Anhänger','Карти':'Karten','Інструменти':'Werkzeuge','В розробці':'In Arbeit','Шаблон':'Vorlage','Концепт':'Konzept','Заплановано':'Geplant'},
-  es: {'Моди':'Mods','модів':'mods','Трактори':'Tractores','Причепи':'Remolques','Карти':'Mapas','Інструменти':'Herramientas','В розробці':'En progreso','Шаблон':'Plantilla','Концепт':'Concepto','Заплановано':'Planeado'},
-  fr: {'Моди':'Mods','модів':'mods','Трактори':'Tracteurs','Причепи':'Remorques','Карти':'Cartes','Інструменти':'Outils','В розробці':'En cours','Шаблон':'Modèle','Концепт':'Concept','Заплановано':'Prévu'}
-};
-
-const categoryKeys = {tractors:'Трактори', trailers:'Причепи', maps:'Карти', tools:'Інструменти'};
-const statusKeys = {progress:'В розробці', template:'Шаблон', concept:'Концепт', planned:'Заплановано'};
-
-function normalizeLang(lang){
-  const code = String(lang || '').slice(0,2).toLowerCase();
-  return LANGS.includes(code) ? code : DEFAULT_LANG;
-}
-function detectLang(){
-  const saved = localStorage.getItem(STORAGE.lang);
-  if(saved && LANGS.includes(saved)) return saved;
-  const browser = normalizeLang(navigator.language || DEFAULT_LANG);
-  return LANGS.includes(browser) ? browser : DEFAULT_LANG;
-}
-function protectNoTranslateTerms(text){
-  const protectedValues = [];
+function normalizeLang(lang){ return LANGS.includes(lang) ? lang : DEFAULT_LANG; }
+function detectLang(){ return normalizeLang(localStorage.getItem(STORAGE.lang) || (navigator.language || DEFAULT_LANG).slice(0,2)); }
+function translateText(text, targetLang = currentLang){
+  if(!text || targetLang === DEFAULT_LANG) return text || '';
   let out = String(text);
-  NO_TRANSLATE_TERMS.forEach((term, i) => {
-    const token = `__PLX_KEEP_${i}_${protectedValues.length}__`;
-    if(out.includes(term)){
-      protectedValues.push([token, term]);
-      out = out.split(term).join(token);
-    }
-  });
-  return {text: out, protectedValues};
-}
-function restoreNoTranslateTerms(text, protectedValues){
-  let out = String(text);
-  protectedValues.forEach(([token, value]) => out = out.split(token).join(value));
+  const dict = TRANSLATE_WORDS[targetLang] || {};
+  for(const [k,v] of Object.entries(dict)) out = out.replaceAll(k, v);
   return out;
 }
-function translateText(text, targetLang = currentLang, sourceLang = DEFAULT_LANG){
-  if(text === null || text === undefined || text === '') return '';
-  targetLang = normalizeLang(targetLang);
-  sourceLang = normalizeLang(sourceLang);
-  if(targetLang === sourceLang || targetLang === DEFAULT_LANG) return String(text);
-
-  const protectedText = protectNoTranslateTerms(text);
-  const ukKey = sourceLang === DEFAULT_LANG ? protectedText.text : findUkrainianEquivalent(protectedText.text, sourceLang);
-  const exact = Object.entries(UI_UK).find(([,v]) => v === ukKey)?.[0];
-  if(exact && TRANSLATION_MEMORY[targetLang]?.[exact]){
-    return restoreNoTranslateTerms(TRANSLATION_MEMORY[targetLang][exact], protectedText.protectedValues);
-  }
-
-  let out = ukKey;
-  Object.entries(GLOSSARY[targetLang] || {}).sort((a,b)=>b[0].length-a[0].length).forEach(([from,to]) => {
-    out = out.split(from).join(to);
-  });
-  return restoreNoTranslateTerms(out, protectedText.protectedValues);
-}
-function findUkrainianEquivalent(text, sourceLang){
-  const pack = TRANSLATION_MEMORY[sourceLang] || {};
-  const item = Object.entries(pack).find(([,v]) => v === text);
-  return item ? UI_UK[item[0]] : text;
-}
-function t(key){ return currentLang === DEFAULT_LANG ? UI_UK[key] || key : TRANSLATION_MEMORY[currentLang]?.[key] || translateText(UI_UK[key] || key, currentLang); }
-function shouldTranslateField(key, value){
-  if(NO_TRANSLATE_FIELDS.has(key)) return false;
-  if(value === null || value === undefined) return false;
-  if(typeof value === 'number' || typeof value === 'boolean') return false;
-  return true;
-}
-function translateContent(value, targetLang = currentLang, sourceLang = DEFAULT_LANG){
-  if(Array.isArray(value)) return value.map(item => translateContent(item, targetLang, sourceLang));
-  if(value && typeof value === 'object'){
-    const out = {};
-    Object.entries(value).forEach(([key, val]) => {
-      out[key] = shouldTranslateField(key, val) ? translateContent(val, targetLang, value.sourceLang || sourceLang) : val;
-    });
-    return out;
-  }
-  if(typeof value === 'string') return translateText(value, targetLang, sourceLang);
-  return value;
-}
-function translateRecord(record, targetLang = currentLang){
-  return translateContent(record, targetLang, record.sourceLang || DEFAULT_LANG);
-}
-function createTranslatedContent(record){
-  const sourceLang = normalizeLang(record.sourceLang || DEFAULT_LANG);
-  const source = {...record, sourceLang};
-  const translations = {};
-  LANGS.forEach(lang => translations[lang] = translateRecord(source, lang));
-  return {sourceLang, translations};
-}
-window.PoluxTranslator = {LANGS, DEFAULT_LANG, languageNames, NO_TRANSLATE_FIELDS, NO_TRANSLATE_TERMS, translateText, translateContent, translateRecord, createTranslatedContent};
-
-const modsSource = [
-  {id:'t4a-bulldozer', author:'Polux Mods', title:'PLX T-4A Bulldozer', category:categoryKeys.tractors, version:'0.9 beta', game:'FS Mobile 20', status:statusKeys.progress, icon:'🚜', desc:'Концепт гусеничного трактора з відвальним обладнанням для майбутньої бази даних.'},
-  {id:'grain-trailer', author:'Polux Mods', title:'PLX Grain Trailer', category:categoryKeys.trailers, version:'1.0 draft', game:'FS Mobile 20', status:statusKeys.template, icon:'▰', desc:'Універсальна картка зернового причепа, підготовлена для майбутньої бази даних.'},
-  {id:'pixel-map-pack', author:'Polux Mods', title:'Pixel Farm Map Pack', category:categoryKeys.maps, version:'0.1 concept', game:'FS Mobile 20', status:statusKeys.concept, icon:'▦', desc:'Картка-заглушка для майбутніх карт, скріншотів і списку змін.'},
-  {id:'utility-pack', author:'Polux Mods', title:'Polux Utility Pack', category:categoryKeys.tools, version:'0.2', game:'FS Mobile 20', status:statusKeys.planned, icon:'⚙', desc:'Підготовлена сторінка для допоміжних модів, виправлень і невеликих доповнень.'}
-];
+function t(key){ return UI[currentLang]?.[key] || UI.uk[key] || key; }
 
 let currentLang = detectLang();
 let currentTheme = localStorage.getItem(STORAGE.theme) || 'amber';
 let crtOn = localStorage.getItem(STORAGE.crt) !== 'off';
-let authMode = 'login';
 let currentUser = readUser();
-
-
-let firebaseAuth = null;
+let authMode = 'login';
 let pendingVerificationUser = null;
+let firebaseAuth = null;
+let modalStack = [];
 
-function firebaseConfigReady(){
-  const cfg = window.POLUX_FIREBASE_CONFIG || {};
-  return !!(cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId);
-}
+function makeId(prefix='id'){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+function nowIso(){ return new Date().toISOString(); }
+function escapeHtml(value){ return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function safeUrl(url){ const s=String(url||'').trim(); return /^(https?:|data:image\/)/i.test(s) ? s : ''; }
+function clampText(text, len=150){ text=String(text||''); return text.length>len ? text.slice(0,len-1).trim()+'…' : text; }
+function formatDate(value){ if(!value) return '—'; try{return new Date(value).toLocaleDateString(currentLang,{year:'numeric',month:'short',day:'numeric'});}catch(e){return value;} }
+function fullDate(value){ if(!value) return '—'; try{return new Date(value).toLocaleString(currentLang,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return value;} }
+function bool(v){ return !!v; }
+function readUser(){ try{return JSON.parse(localStorage.getItem(STORAGE.user)||'null');}catch(e){return null;} }
+function saveUser(user){ currentUser = user; if(user) localStorage.setItem(STORAGE.user, JSON.stringify(user)); else localStorage.removeItem(STORAGE.user); updateProfileButton(); }
+function firebaseConfigReady(){ const cfg = window.POLUX_FIREBASE_CONFIG || {}; return !!(cfg.apiKey && cfg.authDomain && cfg.projectId && cfg.appId); }
 function getFirebaseAuth(){
-  if(window.PoluxAuthService){
-    firebaseAuth = window.PoluxAuthService.getAuth(currentLang);
-    return firebaseAuth;
-  }
   if(firebaseAuth) return firebaseAuth;
-  if(!firebaseConfigReady() || !window.firebase?.initializeApp) return null;
-  if(!firebase.apps?.length) firebase.initializeApp(window.POLUX_FIREBASE_CONFIG);
-  firebaseAuth = firebase.auth();
-  firebaseAuth.languageCode = currentLang;
+  try{
+    if(window.PoluxAuthService?.getAuth) firebaseAuth = window.PoluxAuthService.getAuth(currentLang);
+    else if(firebaseConfigReady() && window.firebase?.auth){ if(!firebase.apps.length) firebase.initializeApp(window.POLUX_FIREBASE_CONFIG); firebaseAuth = firebase.auth(); }
+    if(firebaseAuth) firebaseAuth.languageCode = currentLang;
+  }catch(_){ firebaseAuth = null; }
   return firebaseAuth;
 }
-function showAuthStatus(message, type='info'){
-  const el = $('#authStatus');
-  if(!el) return;
-  el.textContent = message || '';
-  el.className = 'auth-status' + (message ? ' show ' + type : '');
+function firebaseUserToLocalUser(user){ return {uid:user?.uid || makeId('user'), name:user?.displayName || user?.email?.split('@')[0] || t('roleUser'), email:user?.email || '', avatar:user?.photoURL || '', emailVerified:!!user?.emailVerified, firebase:true}; }
+
+function defaultDb(){
+  const ownerId = 'owner_vitaliysh0705';
+  return {
+    version: 2,
+    siteSettings: {
+      maintenance:false, holidayTheme:false, banner:{active:false,text:'',url:''},
+      homeHero:{title:UI.uk.heroTitle,text:UI.uk.heroText,tractor:'▁▂▃▅🚜▅▃▂▁'},
+      homeBlocks:{newMods:true,popularMods:true,news:true}
+    },
+    roles: [
+      {id:'roleOwner', name:'Власник', color:'#ffcf5a', level:100, permissions:['permPublish','permModerateUsers','permModerateReports','permModerateMods','permManageSettings','permManageRoles'], protected:true},
+      {id:'roleAdministrator', name:'Адміністратор', color:'#ff6b4a', level:90, permissions:['permPublish','permModerateUsers','permModerateReports','permModerateMods','permManageSettings','permManageRoles'], protected:true},
+      {id:'roleModerator', name:'Модератор', color:'#5db7ff', level:70, permissions:['permModerateUsers','permModerateReports','permModerateMods'], protected:true},
+      {id:'rolePublisher', name:'Автор публікацій', color:'#69e58d', level:55, permissions:['permPublish'], protected:false},
+      {id:'roleVerified', name:'Перевірений', color:'#d96bff', level:20, permissions:[], protected:false},
+      {id:'roleUser', name:'Користувач', color:'#b89258', level:10, permissions:[], protected:true}
+    ],
+    users: {
+      [ownerId]: {uid:ownerId, publicId:publicUserId(ownerId), name:'Віталій', email:'vitaliysh0705@gmail.com', avatar:'', roles:['roleOwner','roleAdministrator'], rating:0, mutedUntil:null, bannedUntil:null, deletedAt:null, createdAt:nowIso(), lastOnline:nowIso(), bio:'', cover:''}
+    },
+    mods: {}, news: {}, comments: {}, ratings: {}, favorites: {}, tickets: {}, reports: {}, suggestions: {}, notifications: {}, adminActions: {}
+  };
 }
-function setVerifyActionsVisible(visible){
-  $('#verifyActions')?.classList.toggle('hidden', !visible);
+function loadDb(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(STORAGE.db)||'null');
+    const db = raw && raw.version ? raw : defaultDb();
+    const base = defaultDb();
+    db.siteSettings = {...base.siteSettings, ...(db.siteSettings||{}), banner:{...base.siteSettings.banner, ...(db.siteSettings?.banner||{})}, homeHero:{...base.siteSettings.homeHero, ...(db.siteSettings?.homeHero||{})}};
+    db.roles = Array.isArray(db.roles)&&db.roles.length ? db.roles : base.roles;
+    ['users','mods','news','comments','ratings','favorites','tickets','reports','suggestions','notifications','adminActions'].forEach(k => db[k] = db[k] || {});
+    return db;
+  }catch(e){ return defaultDb(); }
 }
-function authErrorMessage(error){
-  const code = error?.code || '';
-  if(code.includes('email-already-in-use')) return t('authEmailInUse');
-  if(code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('user-not-found')) return t('authWrongCredentials');
-  if(code.includes('popup-closed-by-user') || code.includes('cancelled-popup-request')) return t('authPopupClosed');
-  if(code.includes('expired-action-code') || code.includes('invalid-action-code')) return t('resetLinkInvalid');
-  if(code.includes('network')) return t('authNetworkError');
-  return error?.message || t('authNetworkError');
+let DB = loadDb();
+function persistDb(){ localStorage.setItem(STORAGE.db, JSON.stringify(DB)); }
+function publicUserId(uid){ const src=String(uid||'local'); let h=0; for(let i=0;i<src.length;i++) h=((h<<5)-h+src.charCodeAt(i))>>>0; return 'PLX-' + String(h%1000000).padStart(6,'0'); }
+function currentUid(){ return currentUser?.uid || ''; }
+function currentProfile(){ if(!currentUser) return null; return ensureUser(currentUser); }
+function ensureUser(user=currentUser){
+  if(!user) return null;
+  const uid = user.uid || user.email || makeId('user');
+  let p = DB.users[uid];
+  if(!p){ p = {uid, publicId:publicUserId(uid), name:user.name || user.displayName || user.email?.split('@')[0] || t('roleUser'), email:user.email||'', avatar:user.avatar||'', roles:['roleUser'], rating:0, mutedUntil:null, bannedUntil:null, deletedAt:null, createdAt:nowIso(), lastOnline:nowIso(), bio:'', cover:''}; }
+  p.name = p.name || user.name || user.email?.split('@')[0] || t('roleUser');
+  p.email = p.email || user.email || '';
+  p.avatar = p.avatar || user.avatar || '';
+  p.publicId = p.publicId || publicUserId(uid);
+  p.roles = [...new Set([...(p.roles||[]), ...ownerRoles(p.email)])];
+  p.lastOnline = nowIso();
+  DB.users[uid] = p;
+  persistDb();
+  return p;
 }
-async function sendVerification(user){
-  if(!user?.sendEmailVerification) return;
-  await user.sendEmailVerification({url: location.href.split('#')[0] + '#profile'});
+function ownerRoles(email){ return OWNER_EMAILS.includes(String(email||'').toLowerCase()) ? ['roleOwner','roleAdministrator'] : []; }
+function roleById(id){ return DB.roles.find(r=>r.id===id) || {id, name:t(id), color:'var(--accent)', level:0, permissions:[]}; }
+function highestRole(profile){ return (profile?.roles||['roleUser']).map(roleById).sort((a,b)=>(b.level||0)-(a.level||0))[0] || roleById('roleUser'); }
+function hasPermission(profile, perm){ if(!profile) return false; return (profile.roles||[]).some(r => (roleById(r).permissions||[]).includes(perm) || r==='roleOwner'); }
+function canAdmin(profile=currentProfile()){ return hasPermission(profile,'permModerateUsers') || hasPermission(profile,'permManageSettings') || (profile?.roles||[]).includes('roleAdministrator'); }
+function canPublish(profile=currentProfile()){ return hasPermission(profile,'permPublish') || canAdmin(profile); }
+function userName(uid){ return DB.users[uid]?.name || t('roleUser'); }
+function userAvatar(uid){ return DB.users[uid]?.avatar || ''; }
+function defaultAvatarSvg(){ return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="22" r="13"/><path d="M10 58c4-16 15-24 22-24s18 8 22 24"/></svg>`; }
+function avatarHtml(uidOrUser, cls='avatar-mini'){
+  const p = typeof uidOrUser === 'string' ? DB.users[uidOrUser] : uidOrUser;
+  const img = p?.avatar ? `<img src="${escapeHtml(p.avatar)}" alt="">` : defaultAvatarSvg();
+  return `<span class="${cls}">${img}</span>`;
+}
+function publishedMods(){ return Object.values(DB.mods).filter(m => m.status === 'published' || m.status === 'approved'); }
+function publishedNews(){ return Object.values(DB.news).filter(n => n.status === 'published'); }
+function itemRating(itemId){ const rows = Object.values(DB.ratings).filter(r=>r.itemId===itemId); if(!rows.length) return {avg:0,count:0}; const avg = rows.reduce((a,b)=>a+Number(b.value||0),0)/rows.length; return {avg, count:rows.length}; }
+function isFavorite(itemId){ return !!DB.favorites[currentUid() + ':' + itemId]; }
+function addNotification(userId, type, text, url='#notifications'){
+  if(!userId) return;
+  const id = makeId('note');
+  DB.notifications[id] = {id, userId, type, text, url, read:false, createdAt:nowIso()};
+  persistDb();
+}
+function unreadCount(){ if(!currentUser) return 0; return Object.values(DB.notifications).filter(n=>n.userId===currentUid() && !n.read).length; }
+function makeLocalUser(email, name){
+  const uid = 'local_' + String(email||name||Date.now()).toLowerCase().replace(/[^a-z0-9]+/g,'_');
+  const user = {uid, email, name:name||email.split('@')[0], avatar:'', emailVerified:true, local:true};
+  ensureUser(user);
+  return user;
 }
 
-function currentMods(){ return modsSource.map(m => translateRecord(m, currentLang)); }
-
-function applyI18n(){
-  renderProfileMenuItems?.();
-  document.documentElement.lang = currentLang;
-  $$('[data-i18n]').forEach(el => { if(!el.closest('[data-no-translate]')) el.textContent = t(el.dataset.i18n); });
-  $$('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
-  $$('[data-i18n-title]').forEach(el => { const txt = t(el.dataset.i18nTitle); el.title = txt; el.setAttribute('aria-label', txt); });
-  if(firebaseAuth) firebaseAuth.languageCode = currentLang;
-  $('#langSelect').value = currentLang;
-  $('#crtToggle').textContent = crtOn ? t('crtOff') : t('crtOn');
-  
-function updateViewportHeight(){
-  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
-}
-function liftFocusedField(){
-  const el = document.activeElement;
-  if(!el || !el.matches('input, textarea, select')) return;
-  setTimeout(() => el.scrollIntoView({block:'center', inline:'nearest', behavior:'smooth'}), 160);
-}
-updateViewportHeight();
-window.visualViewport?.addEventListener('resize', () => { updateViewportHeight(); liftFocusedField(); });
-window.visualViewport?.addEventListener('scroll', liftFocusedField);
-document.addEventListener('focusin', e => { if(e.target.matches('input, textarea')) liftFocusedField(); });
-
-enhanceCustomSelects(document);
-  $$('select').forEach(syncCustomSelect);
-  updateProfileButton();
-  updateAuthTexts();
-}
+window.PoluxTranslator = {LANGS, DEFAULT_LANG, languageNames, translateText};
+window.PoluxStore = {get db(){return DB;}, save:persistDb, schema:'users, mods, news, comments, ratings, favorites, tickets, reports, suggestions, notifications, roles, siteSettings'};
 
 function applyTheme(){
   document.body.dataset.theme = currentTheme;
-  $('#themeSelect').value = currentTheme;
+  $('#themeSelect') && ($('#themeSelect').value = currentTheme);
   document.body.classList.toggle('crt-on', crtOn);
+  $('#crtToggle') && ($('#crtToggle').textContent = crtOn ? t('crtOff') : t('crtOn'));
   syncCustomSelect($('#themeSelect'));
 }
-
-function showBoot(){
-  $('#boot').classList.remove('hide');
-  setTimeout(() => $('#boot').classList.add('hide'), 520);
+function applyI18n(root=document){
+  document.documentElement.lang = currentLang;
+  $$('[data-i18n]', root).forEach(el => el.textContent = t(el.dataset.i18n));
+  $$('[data-i18n-placeholder]', root).forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
+  $$('[data-i18n-title]', root).forEach(el => { const txt=t(el.dataset.i18nTitle); el.title=txt; el.setAttribute('aria-label',txt); });
+  $('#langSelect') && ($('#langSelect').value = currentLang);
+  applyTheme();
+  updateProfileButton();
 }
+function updateViewportHeight(){ const h = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty('--app-height', `${h}px`); }
+function liftFocusedField(){ const el=document.activeElement; if(!el || !el.matches('input,textarea,select')) return; setTimeout(()=>el.scrollIntoView({block:'center', inline:'nearest', behavior:'smooth'}),140); }
 
+function showBoot(){ const b=$('#boot'); if(!b) return; b.classList.remove('hide'); setTimeout(()=>b.classList.add('hide'), 360); }
+function renderTemplateHtml(html){ $('#app').innerHTML = html; enhanceCustomSelects($('#app')); applyI18n($('#app')); }
+function shell(title, eyebrow, body, cls=''){
+  return `<section class="page-head page-panel ${cls}"><p class="eyebrow">${eyebrow}</p><h1>${title}</h1></section>${body}`;
+}
+function maintenanceGate(){
+  const me = currentProfile();
+  return DB.siteSettings.maintenance && !canAdmin(me);
+}
+function renderMaintenance(){
+  renderTemplateHtml(`<section class="page-panel narrow maintenance-page"><p class="eyebrow">/maintenance</p><h1>${t('maintenance')}</h1><p>${t('maintenanceText')}</p></section>`);
+}
 function route(){
-  const hash = location.hash.replace('#','') || 'home';
   showBoot();
   setTimeout(() => {
-    const [rawPage, id] = hash.split('/');
-    const page = rawPage.split('?')[0];
-    if(page === 'mods' && id) renderMod(id);
+    ensureUser(currentUser);
+    renderBanner();
+    const raw = (location.hash || '#home').slice(1);
+    const cleanRoute = raw.split('?')[0];
+    const [page, id] = cleanRoute.split('/');
+    if(maintenanceGate() && !['profile','notifications'].includes(page)){ renderMaintenance(); return; }
+    if(page === 'mods' && id) renderModDetail(id);
     else if(page === 'mods') renderModsPage();
     else if(page === 'news' && id) renderNewsDetail(id);
     else if(page === 'news') renderNewsPage();
-    else if(page === 'feedback') renderFeedbackPage();
+    else if(page === 'feedback' || page === 'contact') renderFeedbackPage();
+    else if(page === 'about') renderAboutPage();
+    else if(page === 'profile') renderProfilePage(currentUid());
+    else if(page === 'user' && id) renderProfilePage(id);
+    else if(page === 'profile-settings') renderProfileSettingsPage();
+    else if(page === 'my-mods') renderMyModsPage();
     else if(page === 'favorites') renderFavoritesPage();
     else if(page === 'notifications') renderNotificationsPage();
-    else if(page === 'my-mods') renderMyModsPage();
-    else if(page === 'profile-settings') renderProfileSettingsPage();
-    else if(page === 'admin' || rawPage.startsWith('admin?')) renderAdminPanelPage();
-    else if(page === 'user' && id) renderTemplate('profileTemplate', () => renderProfile(id));
-    else if(page === 'about') renderTemplate('aboutTemplate');
-    else if(page === 'contact') renderTemplate('contactTemplate');
-    else if(page === 'profile') renderTemplate('profileTemplate', renderProfile);
+    else if(page === 'admin' || page?.startsWith('admin?')) renderAdminPanelPage();
     else renderHomePage();
-    applyI18n();
-    $('#app').focus({preventScroll:true});
-    $('#nav').classList.remove('open');
-  }, 180);
+    $('#app')?.focus({preventScroll:true});
+    $('#nav')?.classList.remove('open');
+  }, 130);
 }
 
-function renderTemplate(templateId, after){
-  $('#app').innerHTML = $('#' + templateId).innerHTML;
-  if(after) after();
+function renderBanner(){
+  document.body.classList.toggle('holiday-on', !!DB.siteSettings.holidayTheme);
+  let bar = $('#siteBanner');
+  const b = DB.siteSettings.banner || {};
+  if(!b.active || !b.text){ bar?.remove(); return; }
+  if(!bar){
+    bar = document.createElement('div'); bar.id = 'siteBanner'; bar.className = 'site-banner';
+    document.querySelector('.topbar')?.insertAdjacentElement('afterend', bar);
+  }
+  const text = escapeHtml(translateText(b.text, currentLang));
+  bar.innerHTML = b.url ? `<a href="${escapeHtml(safeUrl(b.url))}" target="_blank" rel="noopener"><b>${t('activeBanner')}:</b> ${text}</a>` : `<span><b>${t('activeBanner')}:</b> ${text}</span>`;
 }
+function renderHomePage(){
+  const settings = DB.siteSettings;
+  const modsNew = publishedMods().sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt))).slice(0,4);
+  const popular = publishedMods().sort((a,b)=>itemRating(b.id).avg-itemRating(a.id).avg).slice(0,4);
+  const news = publishedNews().sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt))).slice(0,5);
+  renderTemplateHtml(`
+    <section class="hero page-panel">
+      <div class="hero-copy">
+        <p class="eyebrow">Farming Simulator Mobile</p>
+        <h1>${escapeHtml(translateText(settings.homeHero.title, currentLang))}</h1>
+        <p>${escapeHtml(translateText(settings.homeHero.text, currentLang))}</p>
+        <div class="hero-actions"><a class="btn primary" href="#mods">${t('viewMods')}</a><a class="btn" href="#about">${t('learnMore')}</a></div>
+      </div>
+      <div class="pixel-device" aria-hidden="true"><div class="screen"><span class="blink">POLUX/READY</span><div class="tiny-tractor">${escapeHtml(settings.homeHero.tractor || '🚜')}</div></div></div>
+    </section>
+    <section class="home-dynamic reveal">
+      ${renderHomeSection('newMods', modsNew, '#mods?sort=newest', renderModMiniCard, t('noPublishedMods'))}
+      ${renderHomeSection('popularMods', popular, '#mods?sort=rating', renderModMiniCard, t('noPublishedMods'))}
+      ${renderHomeSection('latestNews', news, '#news', renderNewsMiniCard, t('noPublishedNews'))}
+    </section>`);
+}
+function renderHomeSection(key, items, url, renderer, empty){
+  return `<article class="home-section page-panel"><header class="section-title"><h2>${t(key)}</h2><a href="${url}" class="btn tiny">${t('viewAll')}</a></header><div class="home-row">${items.length ? items.map(renderer).join('') : `<div class="empty-state">${empty}</div>`}</div></article>`;
+}
+function renderModMiniCard(m){
+  const r=itemRating(m.id);
+  return `<a class="mini-card" href="#mods/${m.id}">${modImage(m,'mini-thumb')}<strong>${escapeHtml(translateText(m.title,currentLang))}</strong><small>${escapeHtml(translateText(m.category,currentLang))} · ★ ${r.avg.toFixed(1)} (${r.count})</small></a>`;
+}
+function renderNewsMiniCard(n){ return `<a class="mini-card" href="#news/${n.id}">${newsImage(n,'mini-thumb')}<strong>${escapeHtml(translateText(n.title,currentLang))}</strong><small>${formatDate(n.publishedAt || n.createdAt)} · ${escapeHtml(userName(n.authorId))}</small></a>`; }
+function modImage(m, cls='mod-preview'){ const url = safeUrl((m.images||[])[0] || m.mainImage || ''); return url ? `<img class="${cls}" src="${escapeHtml(url)}" alt="">` : `<div class="${cls} pixel-placeholder">🚜</div>`; }
+function newsImage(n, cls='mod-preview'){ const url = safeUrl(n.mainImage || (n.blocks||[]).find(b=>b.type==='image')?.content || ''); return url ? `<img class="${cls}" src="${escapeHtml(url)}" alt="">` : `<div class="${cls} pixel-placeholder">PX</div>`; }
 
-function renderMods(){
-  const mods = currentMods();
-  const sourceCategories = ['all', ...new Set(modsSource.map(m => m.category))];
-  $('#categoryFilter').innerHTML = sourceCategories.map(c => `<option value="${c}">${c === 'all' ? t('allCategories') : translateText(c, currentLang)}</option>`).join('');
-  enhanceSelect($('#categoryFilter'));
-  syncCustomSelect($('#categoryFilter'));
-  const paint = () => {
-    const q = ($('#searchInput').value || '').toLowerCase();
-    const cat = $('#categoryFilter').value;
-    const filtered = mods.filter((m, i) => (cat === 'all' || modsSource[i].category === cat) && `${m.title} ${m.desc} ${m.category} ${modsSource[i].title} ${modsSource[i].desc}`.toLowerCase().includes(q));
-    $('#modsGrid').innerHTML = filtered.map(m => `
-      <article class="mod-card">
-        <span class="tag">${m.category}</span>
-        <div class="pixel-art">${m.icon}</div>
-        <h3>${m.title}</h3>
-        <p>${m.desc}</p>
-        <footer><span class="status">${m.status}</span><a class="btn" href="#mods/${m.id}" data-link>${t('open')}</a></footer>
-      </article>`).join('');
+function renderModsPage(){
+  const categories = ['all', ...new Set(publishedMods().map(m=>m.category).filter(Boolean))];
+  renderTemplateHtml(shell(t('modsTitle'), '/mods', `
+    <section class="filters reveal"><input id="searchInput" type="search" placeholder="${t('searchPlaceholder')}"><select id="categoryFilter">${categories.map(c=>`<option value="${escapeHtml(c)}">${c==='all'?t('allCategories'):escapeHtml(translateText(c,currentLang))}</option>`).join('')}</select><select id="sortFilter"><option value="new">${t('sortNewest')}</option><option value="rating">${t('sortRating')}</option></select></section>
+    <section class="mods-grid reveal" id="modsGrid"></section>`));
+  const paint=()=>{
+    const q=($('#searchInput').value||'').toLowerCase(); const cat=$('#categoryFilter').value; const sort=$('#sortFilter').value;
+    let list = publishedMods().filter(m => (cat==='all'||m.category===cat) && `${m.title} ${m.shortDesc} ${m.category} ${m.devAuthor}`.toLowerCase().includes(q));
+    if(sort==='rating') list.sort((a,b)=>itemRating(b.id).avg-itemRating(a.id).avg); else list.sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
+    $('#modsGrid').innerHTML = list.length ? list.map(renderModCard).join('') : `<div class="empty-state span-all">${t('noPublishedMods')}</div>`;
   };
-  $('#searchInput').addEventListener('input', paint);
-  $('#categoryFilter').addEventListener('change', paint);
-  paint();
+  $('#searchInput').addEventListener('input', paint); $('#categoryFilter').addEventListener('change', paint); $('#sortFilter').addEventListener('change', paint); paint(); enhanceCustomSelects($('#app'));
+}
+function renderModCard(m){
+  const r=itemRating(m.id); const fav=isFavorite(m.id); const author=DB.users[m.authorId];
+  return `<article class="mod-card rich-card" data-card-id="${m.id}">
+    <button class="card-menu-btn" data-card-menu="${m.id}" aria-label="${t('more')}">⋯</button>
+    <div class="card-menu" data-menu-for="${m.id}"><button data-toggle-fav="${m.id}">${fav?t('favoriteRemove'):t('favoriteAdd')}</button><button data-open-report="mod:${m.id}">${t('report')}</button></div>
+    ${modImage(m)}<h3>${escapeHtml(translateText(m.title,currentLang))}</h3><p>${escapeHtml(clampText(translateText(m.shortDesc || m.description,currentLang), 120))}</p>
+    <div class="card-meta"><span>${formatDate(m.publishedAt||m.createdAt)}</span><span>${escapeHtml(author?.name || 'Polux Mods')}</span></div>
+    <footer><span class="status">★ ${r.avg.toFixed(1)} · ${r.count}</span><a class="btn" href="#mods/${m.id}">${t('open')}</a></footer>
+  </article>`;
+}
+function renderModDetail(id, preview=null){
+  const m = preview || DB.mods[id] || DB.suggestions[id];
+  if(!m){ renderTemplateHtml(`<section class="page-panel narrow"><h1>404</h1><p>${t('noPublishedMods')}</p></section>`); return; }
+  const images = (m.images||[]).filter(safeUrl);
+  const main = images[0] || safeUrl(m.mainImage) || '';
+  const r = itemRating(m.id);
+  const fav = isFavorite(m.id);
+  renderTemplateHtml(`
+    <section class="mod-detail page-panel reveal" data-detail-id="${m.id}">
+      <a class="btn" href="#mods">← ${t('back')}</a>
+      <div class="detail-layout">
+        <div class="gallery">
+          <div class="gallery-main" id="galleryMain" data-zoom-src="${escapeHtml(main)}">${main?`<img src="${escapeHtml(main)}" alt="">`:`<div class="pixel-placeholder big">🚜</div>`}</div>
+          <div class="gallery-thumbs">${images.map((img,i)=>`<button class="thumb ${i===0?'active':''}" data-gallery-src="${escapeHtml(img)}"><img src="${escapeHtml(img)}" alt=""></button>`).join('')}</div>
+          <small>${t('imageZoom')}</small>
+        </div>
+        <div class="detail-info">
+          <p class="eyebrow">${escapeHtml(translateText(m.category||'',currentLang))}</p><h1>${escapeHtml(translateText(m.title,currentLang))}</h1>
+          <p>${richText(m.description || m.shortDesc || '')}</p>
+          <div class="specs">
+            <div><strong>${t('dateAdded')}</strong><br>${formatDate(m.publishedAt||m.createdAt)}</div><div><strong>${t('author')}</strong><br><a href="#user/${m.authorId}">${escapeHtml(userName(m.authorId))}</a></div>
+            <div><strong>${t('version')}</strong><br>${escapeHtml(m.version||'1.0')}</div><div><strong>${t('devAuthor')}</strong><br>${escapeHtml(m.devAuthor||'Polux Mods')}</div>
+            <div><strong>${t('gameVersions')}</strong><br>${(m.gameVersions||['FS Mobile 20']).map(escapeHtml).join(', ')}</div><div><strong>${t('rating')}</strong><br>★ ${r.avg.toFixed(1)} (${r.count})</div>
+          </div>
+          <div class="rating-box" data-rating-for="${m.id}">${[1,2,3,4,5].map(v=>`<button class="star" data-rate="${v}">★</button>`).join('')}<span>${r.count}</span></div>
+          <div class="hero-actions"><a class="btn primary" href="${escapeHtml(safeUrl(m.downloadUrl)||'#')}" ${safeUrl(m.downloadUrl)?'target="_blank" rel="noopener"':''}>${t('download')}</a><button class="btn" data-toggle-fav="${m.id}">${fav?t('favoriteRemove'):t('favoriteAdd')}</button><button class="btn" data-open-report="mod:${m.id}">${t('report')}</button></div>
+        </div>
+      </div>
+    </section>
+    ${renderCommentsSection('mod', m.id, m.authorId)}`);
+  bindComments('mod', m.id, m.authorId);
 }
 
-function renderMod(id){
-  renderTemplate('modTemplate');
-  const base = modsSource.find(x => x.id === id) || modsSource[0];
-  const m = translateRecord(base, currentLang);
-  $('#modDetail').innerHTML = `
-    <a class="btn" href="#mods" data-link>← ${t('back')}</a>
-    <div class="mod-detail-cover">${m.icon}</div>
-    <p class="eyebrow">${m.category} / ${m.game}</p>
-    <h1>${m.title}</h1>
-    <p>${m.desc} ${t('universalTemplate')}</p>
-    <div class="specs">
-      <div><strong>${t('category')}</strong><br>${m.category}</div>
-      <div><strong>${t('version')}</strong><br>${m.version}</div>
-      <div><strong>${t('game')}</strong><br>${m.game}</div>
-      <div><strong>${t('status')}</strong><br>${m.status}</div>
-      <div><strong>Author</strong><br><span data-no-translate>${base.author || 'Polux Mods'}</span></div>
-    </div>
-    <div class="hero-actions"><button class="btn primary" type="button">${t('download')}</button></div>`;
+function renderNewsPage(){
+  const list = publishedNews().sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
+  renderTemplateHtml(shell(t('newsTitle'), '/news', `<section class="mods-grid reveal">${list.length?list.map(renderNewsCard).join(''):`<div class="empty-state span-all">${t('noPublishedNews')}</div>`}</section>`));
+}
+function renderNewsCard(n){ return `<article class="mod-card rich-card">${newsImage(n)}<h3>${escapeHtml(translateText(n.title,currentLang))}</h3><p>${escapeHtml(clampText(translateText(n.excerpt||'',currentLang),120))}</p><div class="card-meta"><span>${formatDate(n.publishedAt||n.createdAt)}</span><span>${escapeHtml(userName(n.authorId))}</span></div><footer><span class="status">${t('comments')}: ${commentRoots('news', n.id).length}</span><a class="btn" href="#news/${n.id}">${t('open')}</a></footer></article>`; }
+function renderNewsDetail(id){
+  const n = DB.news[id];
+  if(!n){ renderNewsPage(); return; }
+  renderTemplateHtml(`
+    <article class="page-panel narrow news-detail"><a class="btn" href="#news">← ${t('back')}</a><p class="eyebrow">/news · ${formatDate(n.publishedAt||n.createdAt)}</p><h1>${escapeHtml(translateText(n.title,currentLang))}</h1><p class="news-author">${t('author')}: <a href="#user/${n.authorId}">${escapeHtml(userName(n.authorId))}</a></p>${renderContentBlocks(n.blocks||[{type:'text',content:n.body||n.excerpt||''}])}</article>
+    ${renderCommentsSection('news', n.id, n.authorId)}`);
+  bindComments('news', n.id, n.authorId);
+}
+function renderContentBlocks(blocks){
+  return `<div class="content-blocks">${blocks.slice(0,10).map((b,i)=>{
+    if(b.type==='image') return `<figure><img src="${escapeHtml(safeUrl(b.content))}" alt=""><figcaption>${escapeHtml(translateText(b.caption||'',currentLang))}</figcaption></figure>`;
+    if(b.type==='poll') return `<div class="poll-box"><strong>${escapeHtml(translateText(b.question||b.content||t('poll'),currentLang))}</strong>${(b.options||[]).map((o,j)=>`<button class="btn tiny" data-poll-vote="${i}:${j}">${escapeHtml(translateText(o,currentLang))}</button>`).join('')}</div>`;
+    return `<div class="text-block">${richText(b.content||'')}</div>`;
+  }).join('')}</div>`;
 }
 
+function richText(text){
+  let html = escapeHtml(translateText(String(text||''), currentLang));
+  html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img class="inline-image" src="$2" alt="$1">');
+  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/@([\wА-Яа-яІіЇїЄєҐґ.-]{2,32})/g, (m,name)=>`<a href="#${findUserHashByName(name)}">@${name}</a>`);
+  return html.replace(/\n/g,'<br>');
+}
+function findUserHashByName(name){ const u=Object.values(DB.users).find(x=>(x.name||'').toLowerCase()===String(name).toLowerCase()); return u ? `user/${u.uid}` : 'mods'; }
+function commentRoots(type, itemId){ return Object.values(DB.comments).filter(c=>c.type===type && c.itemId===itemId && !c.parentId).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))); }
+function commentChildren(parentId){ return Object.values(DB.comments).filter(c=>c.parentId===parentId).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))); }
+function renderCommentsSection(type, itemId, ownerId){
+  return `<section class="page-panel comments-panel" id="commentsPanel"><header class="section-title"><h2>${t('comments')}</h2></header>${currentUser?`<form class="comment-form" data-comment-form><textarea maxlength="800" placeholder="${t('writeComment')}"></textarea><button class="btn primary">${t('addComment')}</button></form>`:`<p>${t('commentLogin')}</p><button class="btn primary" type="button" data-open-login>${t('openLogin')}</button>`}<div class="comments-tree">${commentRoots(type,itemId).map(c=>renderComment(c, ownerId)).join('')}</div></section>`;
+}
+function renderComment(c, ownerId){
+  const p=DB.users[c.authorId]||{}; const score=Number(c.up||0)-Number(c.down||0); const canEdit=currentUid()===c.authorId; const canDelete=canEdit||canAdmin(); const role=highestRole(p);
+  return `<article class="comment-card ${c.deletedAt?'deleted':''}" data-comment-id="${c.id}">${avatarHtml(p)}<div class="comment-body"><header><strong><a href="#user/${p.uid}">${escapeHtml(p.name||t('roleUser'))}</a></strong><small>${p.publicId||publicUserId(p.uid)} · <span style="color:${escapeHtml(role.color)}">${escapeHtml(translateText(role.name,currentLang))}</span> · ${fullDate(c.createdAt)}</small></header><div class="comment-text">${c.deletedAt?`<span class="deleted-text">${t('deletedComment')}</span>`:richText(c.text)}</div><footer><button data-comment-reply="${c.id}">${t('reply')}</button><button data-comment-vote="up:${c.id}">▲</button><span class="score ${score>=0?'pos':'neg'}">${score}</span><button data-comment-vote="down:${c.id}">▼</button>${canEdit&&!c.deletedAt?`<button data-comment-edit="${c.id}">${t('edit')}</button>`:''}${canDelete&&!c.deletedAt?`<button data-comment-delete="${c.id}">${t('delete')}</button>`:''}${!canEdit&&!c.deletedAt?`<button data-open-report="comment:${c.id}">${t('report')}</button>`:''}</footer><div class="reply-slot" data-reply-slot="${c.id}"></div><div class="comment-children">${commentChildren(c.id).map(ch=>renderComment(ch, ownerId)).join('')}</div></div></article>`;
+}
+function bindComments(type, itemId, ownerId){
+  const root=$('#commentsPanel'); if(!root) return;
+  root.addEventListener('submit', e=>{
+    const form=e.target.closest('[data-comment-form]'); if(!form) return; e.preventDefault();
+    const text=form.querySelector('textarea')?.value.trim(); if(!text) return;
+    const parentId=form.dataset.parentId || null;
+    const mentioned = parentId ? DB.comments[parentId]?.authorId : null;
+    const id=makeId('comment'); DB.comments[id]={id,type,itemId,parentId,authorId:currentUid(),text,up:0,down:0,createdAt:nowIso(),updatedAt:nowIso(),deletedAt:null}; persistDb();
+    if(mentioned && mentioned!==currentUid()) addNotification(mentioned,'comment',`${userName(currentUid())}: ${t('notificationComment')}`, `#${type==='mod'?'mods':'news'}/${itemId}`);
+    if(ownerId && ownerId!==currentUid()) addNotification(ownerId,'comment',`${userName(currentUid())}: ${t('notificationComment')}`, `#${type==='mod'?'mods':'news'}/${itemId}`);
+    type==='mod' ? renderModDetail(itemId) : renderNewsDetail(itemId);
+  });
+}
 
-function readUser(){
-  try { return JSON.parse(localStorage.getItem(STORAGE.user) || 'null'); }
-  catch(e){ return null; }
+function renderFeedbackPage(){
+  if(!currentUser){ renderTemplateHtml(shell(t('feedbackTitle'), '/feedback', `<section class="page-panel narrow"><p>${t('feedbackLogin')}</p><button class="btn primary" data-open-login>${t('openLogin')}</button></section>`)); return; }
+  const mine = Object.values(DB.tickets).filter(x=>x.authorId===currentUid()).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  renderTemplateHtml(shell(t('feedbackTitle'), '/feedback', `
+    <section class="page-panel tabs-panel"><div class="admin-tabs"><button class="active" data-tab-open="submitTicket">${t('submitTicket')}</button><button data-tab-open="myTickets">${t('myTickets')}</button></div>
+      <div class="tab-body" data-tab="submitTicket"><form class="auth-form" id="ticketForm"><label class="field"><span>${t('topic')}</span><select id="ticketTopic"><option>Моди</option><option>Акаунт</option><option>Скарга</option><option value="other">${t('topicOther')}</option></select></label><label class="field hidden" id="customTopicWrap"><span>${t('topicOther')}</span><input id="customTopic"></label><label class="field"><span>${t('ticketMessage')} (${t('ticketLimit')})</span><textarea id="ticketText" maxlength="300"></textarea></label><label class="field"><span>${t('addImages')}</span><input id="ticketImages" placeholder="https://..."></label><button class="btn primary">${t('sendMessage')}</button></form></div>
+      <div class="tab-body hidden" data-tab="myTickets"><div class="ticket-list">${mine.length?mine.map(renderTicketCard).join(''):`<p>${t('noTickets')}</p>`}</div></div>
+    </section>`));
+  $('#ticketTopic').addEventListener('change',()=>$('#customTopicWrap').classList.toggle('hidden',$('#ticketTopic').value!=='other'));
+  $('#ticketForm').addEventListener('submit', e=>{ e.preventDefault(); const text=$('#ticketText').value.trim(); if(!text) return alert(t('fieldRequired')); const id=makeId('ticket'); DB.tickets[id]={id,type:'feedback',topic:$('#ticketTopic').value==='other'?$('#customTopic').value.trim():$('#ticketTopic').value,text,images:$('#ticketImages').value.split(',').map(x=>x.trim()).filter(Boolean),authorId:currentUid(),status:'new',answer:'',objectUrl:'',createdAt:nowIso(),updatedAt:nowIso()}; persistDb(); alert(t('ticketSent')); route(); });
 }
-function saveUser(user){
-  currentUser = user;
-  if(user) localStorage.setItem(STORAGE.user, JSON.stringify(user));
-  else localStorage.removeItem(STORAGE.user);
-  updateProfileButton();
-  if(['profile','profile-settings'].includes((location.hash.replace('#','') || 'home'))) route();
+function renderTicketCard(ticket){ return `<article class="ticket-card ${ticket.status==='closed'?'is-closed':''}" data-ticket-id="${ticket.id}"><span class="ticket-type">${ticket.type==='complaint'?t('complaint'):t('feedback')}</span><span class="status status-${ticket.status}">${t(ticket.status==='in_progress'?'inProgress':ticket.status)}</span><h3>${escapeHtml(translateText(ticket.topic,currentLang))}</h3><p>${richText(ticket.text)}</p>${ticket.answer?`<div class="ticket-answer"><strong>${t('answerAuthor')}:</strong><p>${richText(ticket.answer)}</p></div>`:''}<small>${fullDate(ticket.createdAt)}</small></article>`; }
+
+function renderAboutPage(){ renderTemplateHtml(shell(t('aboutTitle'), '/about', `<section class="page-panel narrow"><p>${t('aboutText')}</p><div class="terminal-box"><p>&gt; database_schema: normalized</p><p>&gt; collections: users/mods/news/comments/tickets/reports</p><p>&gt; mobile_layout: responsive</p></div></section>`)); }
+function renderProfilePage(uid){
+  if(!currentUser && !uid){ renderTemplateHtml(`<section class="page-panel narrow profile-page"><h1>${t('profileTitle')}</h1><div class="profile-empty"><div class="profile-big-avatar">${defaultAvatarSvg()}</div><p>${t('profileGuest')}</p><button class="btn primary" data-open-login>${t('openLogin')}</button></div></section>`); return; }
+  const own = !uid || uid===currentUid(); const p = own ? currentProfile() : DB.users[uid];
+  if(!p){ renderTemplateHtml(`<section class="page-panel narrow"><h1>404</h1><p>${t('noUsers')}</p></section>`); return; }
+  if(p.deletedAt){ const recover = own && (Date.now()-new Date(p.deletedAt).getTime() <= 30*86400000); renderTemplateHtml(`<section class="page-panel narrow profile-page"><h1>${t('recoverAccount')}</h1><p>${t('recoverAccountText')}</p>${recover?`<button class="btn primary" data-recover-account>${t('recoverAccount')}</button>`:''}</section>`); return; }
+  const role=highestRole(p); const mods=publishedMods().filter(m=>m.authorId===p.uid); const canMod=!own && canAdmin();
+  renderTemplateHtml(`<section class="page-panel narrow profile-page"><div class="profile-hero-card"><div class="profile-cover">${p.cover?`<img src="${escapeHtml(p.cover)}" alt="">`:`<div class="profile-cover-default"><span>POLUX MODS</span></div>`}</div><div class="profile-headline"><div class="profile-big-avatar floating">${avatarHtml(p,'avatar-big')}</div><div class="profile-main-info"><h1>${escapeHtml(p.name)}</h1><div class="profile-public-id"><span>${t('profileId')}</span><b>${p.publicId}</b></div><div class="profile-ranks"><span style="border-color:${escapeHtml(role.color)};color:${escapeHtml(role.color)}">${escapeHtml(translateText(role.name,currentLang))}</span></div>${p.bio?`<p>${richText(p.bio)}</p>`:''}</div></div><div class="profile-stats-grid"><div><strong>${t('lastOnline')}</strong><span>${fullDate(p.lastOnline)}</span></div><div><strong>${t('registeredAt')}</strong><span>${formatDate(p.createdAt)}</span></div><div><strong>${t('userRating')}</strong><span>${p.rating||0}</span></div></div><div class="profile-actions-row">${own?`<a class="btn primary" href="#profile-settings">${t('profileSettings')}</a>`:''}${canMod?`<a class="btn primary" href="#admin?user=${p.uid}">${t('blockUsers')}</a>`:''}</div></div></section><section class="mods-grid reveal">${mods.length?mods.map(renderModCard).join(''):`<div class="empty-state span-all">${t('noPublishedMods')}</div>`}</section>`);
 }
-function defaultAvatarSvg(){
-  return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="8" fill="none"/><circle cx="32" cy="24" r="12"/><path d="M12 58c3-15 13-22 20-22s17 7 20 22"/></svg>`;
+function renderProfileSettingsPage(){
+  const p=currentProfile(); if(!p){ openAuthModal('login'); location.hash='#home'; return; }
+  renderTemplateHtml(`<section class="page-panel narrow"><p class="eyebrow">/settings</p><h1>${t('profileSettings')}</h1><form class="auth-form" id="profileSettingsForm"><label class="field"><span>${t('displayName')}</span><input id="profileNameInput" value="${escapeHtml(p.name)}"></label><label class="field"><span>${t('accountBio')}</span><textarea id="profileBioInput" maxlength="120">${escapeHtml(p.bio||'')}</textarea></label><label class="field"><span>${t('avatar')}</span><input id="profileAvatarInput" placeholder="https://..." value="${escapeHtml(p.avatar||'')}"></label><button class="btn primary">${t('save')}</button></form></section>`);
+  $('#profileSettingsForm').addEventListener('submit', e=>{ e.preventDefault(); p.name=$('#profileNameInput').value.trim()||p.name; p.bio=$('#profileBioInput').value.trim(); p.avatar=$('#profileAvatarInput').value.trim(); DB.users[p.uid]=p; persistDb(); saveUser({...currentUser,name:p.name,avatar:p.avatar}); route(); });
 }
+function renderMyModsPage(){
+  if(!currentUser){ openAuthModal('login'); return; }
+  const list = Object.values(DB.mods).filter(m=>m.authorId===currentUid() || DB.suggestions[m.id]?.authorId===currentUid());
+  renderTemplateHtml(shell(t('menuMyMods'), '/my-mods', `<section class="mods-grid reveal">${list.length?list.map(renderModCard).join(''):`<div class="empty-state span-all">${t('noPublishedMods')}</div>`}</section>`));
+}
+function renderFavoritesPage(){
+  if(!currentUser){ openAuthModal('login'); return; }
+  const ids=Object.values(DB.favorites).filter(f=>f.userId===currentUid()).map(f=>f.itemId); const list=publishedMods().filter(m=>ids.includes(m.id));
+  renderTemplateHtml(shell(t('favoritesTitle'), '/favorites', `<section class="mods-grid reveal">${list.length?list.map(renderModCard).join(''):`<div class="empty-state span-all">${t('noFavorites')}</div>`}</section>`));
+}
+function renderNotificationsPage(){
+  if(!currentUser){ openAuthModal('login'); return; }
+  const list=Object.values(DB.notifications).filter(n=>n.userId===currentUid()).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  renderTemplateHtml(shell(t('notificationsTitle'), '/notifications', `<section class="page-panel narrow"><button class="btn" data-mark-notifications>${t('markAllRead')}</button><div class="notification-list">${list.length?list.map(n=>`<a class="notification-card ${n.read?'read':'unread'}" href="${escapeHtml(n.url||'#notifications')}"><strong>${escapeHtml(translateText(n.text,currentLang))}</strong><small>${fullDate(n.createdAt)}</small></a>`).join(''):`<p>${t('noNotifications')}</p>`}</div></section>`));
+}
+
+function requireAdmin(){ const me=currentProfile(); return currentUser && canAdmin(me); }
+function renderAdminPanelPage(){
+  if(!requireAdmin()){ renderTemplateHtml(`<section class="page-panel narrow"><h1>${t('adminPanelTitle')}</h1><p>${t('adminOnly')}</p></section>`); return; }
+  const tabs = [['publication','blockPublication'],['users','blockUsers'],['tickets','blockTickets'],['suggested','blockSuggested'],['settings','blockSiteSettings']];
+  renderTemplateHtml(`<section class="page-head page-panel admin-page"><p class="eyebrow">/admin</p><h1>${t('adminPanelTitle')}</h1><p>${t('adminPanelText')}</p><small>${t('dbSchema')}</small></section><section class="admin-block-shell"><div class="admin-carousel">${tabs.map(([id,key],i)=>`<button class="admin-block-tab ${i===0?'active':''}" data-admin-block="${id}"><span>0${i+1}</span><b>${t(key)}</b></button>`).join('')}</div><div class="admin-block-content" id="adminBlockContent"></div></section>`);
+  renderAdminBlock('publication');
+}
+function renderAdminBlock(block){
+  $$('.admin-block-tab').forEach(b=>b.classList.toggle('active', b.dataset.adminBlock===block));
+  const box=$('#adminBlockContent'); if(!box) return;
+  if(block==='publication') box.innerHTML=adminPublicationHtml();
+  if(block==='users') box.innerHTML=adminUsersHtml();
+  if(block==='tickets') box.innerHTML=adminTicketsHtml();
+  if(block==='suggested') box.innerHTML=adminSuggestedHtml();
+  if(block==='settings') box.innerHTML=adminSettingsHtml();
+  enhanceCustomSelects(box); bindAdminBlock(block);
+}
+function adminPublicationHtml(){
+  return `<article class="admin-card admin-wide"><h2>${t('blockPublication')}</h2><label class="field"><span>${t('publishArea')}</span><select id="publishArea"><option value="home">${t('editHome')}</option><option value="news">${t('publishNews')}</option><option value="mod">${t('publishMods')}</option></select></label><div id="publishFormHost"></div></article>`;
+}
+function publicationForm(area){
+  if(area==='home') return `<form class="auth-form" id="homePublishForm"><label class="field"><span>${t('heroTitle')}</span><input id="homeHeroTitle" value="${escapeHtml(DB.siteSettings.homeHero.title)}"></label><label class="field"><span>${t('heroText')}</span><textarea id="homeHeroText">${escapeHtml(DB.siteSettings.homeHero.text)}</textarea></label><label class="field"><span>Pixel tractor</span><input id="homeHeroTractor" value="${escapeHtml(DB.siteSettings.homeHero.tractor||'')}"></label><div class="hero-actions"><button class="btn" type="button" id="homeClearBtn">${t('clear')}</button><button class="btn primary">${t('publish')}</button></div></form>`;
+  if(area==='news') return `<form class="auth-form" id="newsPublishForm"><label class="field"><span>${t('title')}</span><input id="newsTitleInput"></label><label class="field"><span>${t('shortDescription')}</span><textarea id="newsExcerptInput"></textarea></label><label class="field"><span>${t('mainImage')}</span><input id="newsImageInput" placeholder="https://..."></label><div class="builder-head"><strong>${t('blocksLimit')}</strong><button class="btn tiny" type="button" data-add-content-block>${t('addBlock')}</button></div><div class="content-builder" id="contentBuilder"></div><button class="btn primary">${t('publish')}</button></form>`;
+  return `<form class="auth-form" id="modPublishForm"><label class="field"><span>${t('title')}</span><input id="modTitleInput"></label><label class="field"><span>${t('shortDescription')}</span><textarea id="modShortInput"></textarea></label><label class="field"><span>${t('fullText')}</span><textarea id="modDescInput"></textarea></label><div class="form-grid"><label class="field"><span>${t('category')}</span><input id="modCategoryInput" placeholder="Трактори"></label><label class="field"><span>${t('version')}</span><input id="modVersionInput" value="1.0"></label><label class="field"><span>${t('devAuthor')}</span><input id="modDevAuthorInput" value="Polux Mods"></label></div><label class="field"><span>${t('gameVersions')}</span><div class="checks-row">${GAME_VERSIONS.map(v=>`<label><input type="checkbox" name="gameVersion" value="${v}" ${v==='FS Mobile 20'?'checked':''}> ${v}</label>`).join('')}</div></label><label class="field"><span>${t('galleryUrls')}</span><textarea id="modImagesInput" placeholder="https://img1, https://img2"></textarea></label><label class="field"><span>${t('downloadUrl')}</span><input id="modDownloadInput" placeholder="https://..."></label><button class="btn primary">${t('publish')}</button></form>`;
+}
+function addBuilderBlock(type='text', content=''){
+  const host=$('#contentBuilder'); if(!host || host.children.length>=10) return;
+  const idx=host.children.length+1;
+  host.insertAdjacentHTML('beforeend', `<div class="builder-block" data-builder-block><header><strong>${idx}</strong><select data-block-type><option value="text">${t('textBlock')}</option><option value="image">${t('imageBlock')}</option><option value="poll">${t('pollBlock')}</option></select><button type="button" class="icon-btn" data-remove-block>×</button></header><textarea data-block-content placeholder="${t('fullText')}">${escapeHtml(content)}</textarea><input data-block-poll-options class="hidden" placeholder="Варіанти через кому"></div>`);
+  const last=host.lastElementChild; last.querySelector('[data-block-type]').value=type; enhanceCustomSelects(last);
+}
+function collectBlocks(){ return $$('[data-builder-block]').map(block=>{ const type=block.querySelector('[data-block-type]').value; const content=block.querySelector('[data-block-content]').value.trim(); if(type==='poll') return {type, question:content, options:block.querySelector('[data-block-poll-options]').value.split(',').map(x=>x.trim()).filter(Boolean)}; return {type, content}; }).filter(b=>b.content || b.question); }
+function adminUsersHtml(){ return `<article class="admin-card admin-wide"><h2>${t('blockUsers')}</h2><label class="field"><span>${t('userSearchPlaceholder')}</span><input id="adminUserSearch" type="search" placeholder="${t('userSearchPlaceholder')}"></label><div class="admin-users-table" id="adminUsersTable"></div></article>`; }
+function renderAdminUsers(filter=''){
+  const q=String(filter).toLowerCase(); const users=Object.values(DB.users).filter(u=>!q || `${u.publicId} ${u.email} ${u.name} ${u.uid}`.toLowerCase().includes(q)).sort((a,b)=>String(b.lastOnline).localeCompare(String(a.lastOnline)));
+  $('#adminUsersTable').innerHTML = users.length ? users.map(u=>{ const role=highestRole(u); return `<div class="admin-user-row modern" data-user-row="${u.uid}">${avatarHtml(u)}<div><strong>${escapeHtml(u.name)}</strong><small>${u.publicId} · ${escapeHtml(u.email||'—')} · <span style="color:${escapeHtml(role.color)}">${escapeHtml(translateText(role.name,currentLang))}</span> · ${t('lastOnline')}: ${fullDate(u.lastOnline)}</small></div><button class="icon-btn" data-user-dots="${u.uid}">⋯</button><div class="admin-user-menu"><a href="#user/${u.uid}">${t('viewProfile')}</a><button data-user-action="mute:${u.uid}">${u.mutedUntil?t('unmute'):t('mute')}</button><button data-user-action="ban:${u.uid}">${u.bannedUntil?t('unban'):t('ban')}</button><button data-user-action="rating:${u.uid}">${t('editRating')}</button><button data-user-action="roles:${u.uid}">${t('editRoles')}</button><button data-user-action="delete:${u.uid}">${u.deletedAt?t('restoreAccount'):t('deleteAccount')}</button></div></div>`; }).join('') : `<p>${t('noUsers')}</p>`;
+}
+function adminTicketsHtml(){ const list=[...Object.values(DB.tickets), ...Object.values(DB.reports)].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))); return `<article class="admin-card admin-wide"><h2>${t('blockTickets')}</h2><div class="ticket-list admin-ticket-list">${list.length?list.map(ti=>renderAdminTicket(ti)).join(''):`<p>${t('noTickets')}</p>`}</div></article>`; }
+function renderAdminTicket(ticket){ const st=ticket.status||'new'; return `<article class="ticket-card status-border-${st} ${st==='closed'?'is-closed':''}" data-admin-ticket="${ticket.id}" data-ticket-source="${DB.tickets[ticket.id]?'tickets':'reports'}"><span class="ticket-type">${ticket.type==='complaint'?t('complaint'):t('feedback')}</span><span class="status status-${st}">${t(st==='in_progress'?'inProgress':st)}</span><h3>${escapeHtml(ticket.topic||ticket.objectType||t('complaint'))}</h3><p>${richText(ticket.text||ticket.reason||'')}</p><button class="btn tiny" data-ticket-open="${ticket.id}">${t('actions')}</button></article>`; }
+function adminSuggestedHtml(){ const list=Object.values(DB.suggestions).filter(m=>m.status==='pending'||m.status==='rejected').sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))); return `<article class="admin-card admin-wide"><h2>${t('suggestedMods')}</h2><div class="mods-grid">${list.length?list.map(m=>`<article class="mod-card rich-card">${modImage(m)}<h3>${escapeHtml(m.title)}</h3><p>${escapeHtml(clampText(m.shortDesc||m.description,120))}</p><footer><button class="btn" data-preview-suggestion="${m.id}">${t('review')}</button><button class="btn primary" data-approve-suggestion="${m.id}">${t('approve')}</button><button class="btn" data-edit-suggestion="${m.id}">${t('edit')}</button><button class="btn danger-soft" data-reject-suggestion="${m.id}">${t('reject')}</button></footer></article>`).join(''):`<div class="empty-state span-all">${t('noSuggested')}</div>`}</div></article>`; }
+function adminSettingsHtml(){ return `<article class="admin-card admin-wide"><h2>${t('blockSiteSettings')}</h2><div class="settings-grid"><label class="switch-row"><input type="checkbox" id="holidayToggle" ${DB.siteSettings.holidayTheme?'checked':''}> <span>${t('holidayTheme')}</span></label><label class="switch-row"><input type="checkbox" id="maintenanceToggle" ${DB.siteSettings.maintenance?'checked':''}> <span>${t('maintenance')}</span></label><label class="switch-row"><input type="checkbox" id="bannerActiveToggle" ${DB.siteSettings.banner.active?'checked':''}> <span>${t('bannerActive')}</span></label><label class="field"><span>${t('bannerText')}</span><input id="bannerTextInput" value="${escapeHtml(DB.siteSettings.banner.text||'')}"></label><label class="field"><span>${t('bannerUrl')}</span><input id="bannerUrlInput" value="${escapeHtml(DB.siteSettings.banner.url||'')}"></label></div><button class="btn primary" id="saveSiteSettings">${t('save')}</button><hr><header class="section-title"><h3>${t('roles')}</h3><button class="btn tiny" data-role-add>${t('addRole')}</button></header><div class="roles-list">${DB.roles.sort((a,b)=>(b.level||0)-(a.level||0)).map(renderRoleRow).join('')}</div></article>`; }
+function renderRoleRow(role){ return `<div class="role-row" data-role-row="${role.id}"><span class="role-dot" style="background:${escapeHtml(role.color)}"></span><strong>${escapeHtml(translateText(role.name,currentLang))}</strong><small>${(role.permissions||[]).map(p=>t(p)).join(' · ')||'—'}</small><button class="icon-btn" data-role-dots="${role.id}">⋯</button><div class="admin-user-menu"><button data-role-users="${role.id}">${t('viewRoleUsers')}</button><button data-role-edit="${role.id}">${t('changeRole')}</button><button data-role-delete="${role.id}">${t('deleteRole')}</button></div></div>`; }
+function bindAdminBlock(block){
+  if(block==='publication'){
+    const host=$('#publishFormHost'); const select=$('#publishArea'); const render=()=>{host.innerHTML=publicationForm(select.value); enhanceCustomSelects(host); if(select.value==='news') addBuilderBlock('text');}; render(); select.addEventListener('change',render);
+  }
+  if(block==='users'){ renderAdminUsers(); $('#adminUserSearch').addEventListener('input',e=>renderAdminUsers(e.target.value)); }
+}
+
+function openModal(title, body, opts={}){
+  const id=makeId('modal'); modalStack.push(id);
+  document.body.insertAdjacentHTML('beforeend', `<div class="auth-modal open profile-modal" id="${id}" aria-hidden="false"><div class="auth-card ${opts.wide?'wide':''}" role="dialog"><button class="auth-close" type="button" data-close-modal="${id}">×</button><p class="eyebrow">/dialog</p><h2>${title}</h2>${body}</div></div>`);
+  const modal=$('#'+id); modal.addEventListener('click', e=>{ if(e.target.id===id || e.target.closest('[data-close-modal]')) modal.remove(); }); enhanceCustomSelects(modal); return modal;
+}
+function openReportModal(target){
+  if(!currentUser){ openAuthModal('login'); return; }
+  const m=openModal(t('report'), `<form class="auth-form" id="reportForm"><label class="field"><span>${t('reason')}</span><textarea id="reportReason" maxlength="300"></textarea></label><button class="btn primary">${t('sendMessage')}</button></form>`);
+  $('#reportForm',m).addEventListener('submit',e=>{ e.preventDefault(); const id=makeId('report'); const [type,itemId]=target.split(':'); DB.reports[id]={id,type:'complaint',objectType:type,objectId:itemId,objectUrl:'#'+(type==='mod'?'mods/':'')+itemId,authorId:currentUid(),text:$('#reportReason',m).value.trim(),status:'new',createdAt:nowIso(),updatedAt:nowIso()}; persistDb(); m.remove(); alert(t('reportSent')); });
+}
+function openRatingModal(uid){ const p=DB.users[uid]; const m=openModal(t('editRating'), `<form class="auth-form" id="ratingForm"><label class="field"><span>${t('points')}</span><input id="ratingPoints" type="number" value="0"></label><label class="field"><span>${t('reason')}</span><input id="ratingReason"></label><button class="btn primary">${t('save')}</button></form>`); $('#ratingForm',m).onsubmit=e=>{e.preventDefault(); p.rating=Number(p.rating||0)+Number($('#ratingPoints',m).value||0); DB.users[uid]=p; DB.adminActions[makeId('action')]={type:'rating',uid,delta:Number($('#ratingPoints',m).value||0),reason:$('#ratingReason',m).value,adminId:currentUid(),createdAt:nowIso()}; persistDb(); m.remove(); renderAdminUsers($('#adminUserSearch')?.value||'');}; }
+function openRolesModal(uid){ const p=DB.users[uid]; const m=openModal(t('editRoles'), `<form class="auth-form" id="rolesForm"><div class="checks-list">${DB.roles.map(r=>`<label><input type="checkbox" name="roles" value="${r.id}" ${(p.roles||[]).includes(r.id)?'checked':''}> <span style="color:${escapeHtml(r.color)}">${escapeHtml(translateText(r.name,currentLang))}</span></label>`).join('')}</div><div class="hero-actions"><button class="btn" type="button" data-cancel-modal>${t('cancel')}</button><button class="btn primary">${t('confirm')}</button></div></form>`); m.querySelector('[data-cancel-modal]').onclick=()=>m.remove(); $('#rolesForm',m).onsubmit=e=>{e.preventDefault(); p.roles=$$('input[name="roles"]:checked',m).map(x=>x.value); if(!p.roles.length) p.roles=['roleUser']; DB.users[uid]=p; addNotification(uid,'role',t('notificationRole'),'#profile'); persistDb(); m.remove(); renderAdminUsers($('#adminUserSearch')?.value||'');}; }
+function openTicketModal(id, source){ const ticket=DB[source]?.[id]; if(!ticket) return; const closed=ticket.status==='closed'; const m=openModal(`${ticket.type==='complaint'?t('complaint'):t('feedback')} · ${t(ticket.status==='in_progress'?'inProgress':ticket.status||'new')}`, `<div class="ticket-modal-body"><p><strong>${t('object')}:</strong> ${ticket.objectUrl?`<a href="${escapeHtml(ticket.objectUrl)}">${escapeHtml(ticket.objectUrl)}</a>`:'—'}</p><p>${richText(ticket.text||ticket.reason||'')}</p>${closed?`<div class="auth-status show warn">${t('ticketClosedInfo')}</div>`:''}<label class="field"><span>${t('answerAuthor')}</span><textarea id="ticketAnswer" ${closed?'disabled':''}>${escapeHtml(ticket.answer||'')}</textarea></label><div class="hero-actions"><button class="btn" data-ticket-status="in_progress" ${closed?'disabled':''}>${t('workTicket')}</button><button class="btn" data-ticket-status="closed">${t('closeTicket')}</button><button class="btn danger-soft" data-ticket-delete>${t('deleteTicket')}</button><button class="btn primary" data-ticket-save ${closed?'disabled':''}>${t('save')}</button></div></div>`, {wide:true}); m.dataset.ticketId=id; m.dataset.ticketSource=source; }
+function openRoleEditor(roleId=null){ const role=roleId?roleById(roleId):{id:'role_'+Date.now(),name:'Нова роль',color:'#69e58d',level:30,permissions:[]}; const perms=['permPublish','permModerateUsers','permModerateReports','permModerateMods','permManageSettings','permManageRoles']; const m=openModal(roleId?t('changeRole'):t('addRole'), `<form class="auth-form" id="roleForm"><label class="field"><span>${t('roleName')}</span><input id="roleNameInput" value="${escapeHtml(role.name)}"></label><label class="field"><span>${t('roleColor')}</span><input id="roleColorInput" type="color" value="${escapeHtml(role.color||'#69e58d')}"></label><label class="field"><span>Level</span><input id="roleLevelInput" type="number" value="${Number(role.level||30)}"></label><div class="checks-list">${perms.map(p=>`<label><input type="checkbox" name="perms" value="${p}" ${(role.permissions||[]).includes(p)?'checked':''}> ${t(p)}</label>`).join('')}</div><button class="btn primary">${t('save')}</button></form>`); $('#roleForm',m).onsubmit=e=>{e.preventDefault(); role.name=$('#roleNameInput',m).value.trim()||role.name; role.color=$('#roleColorInput',m).value; role.level=Number($('#roleLevelInput',m).value||30); role.permissions=$$('input[name="perms"]:checked',m).map(x=>x.value); if(!roleId) DB.roles.push(role); else DB.roles=DB.roles.map(r=>r.id===roleId?{...r,...role}:r); persistDb(); m.remove(); renderAdminBlock('settings');}; }
+function openRoleUsers(roleId){ const users=Object.values(DB.users).filter(u=>(u.roles||[]).includes(roleId)); openModal(t('usersWithRole'), `<div class="admin-users-list">${users.length?users.map(u=>`<a class="admin-user-row" href="#user/${u.uid}">${avatarHtml(u)}<div><strong>${escapeHtml(u.name)}</strong><small>${escapeHtml(u.email||'')} · ${u.publicId}</small></div></a>`).join(''):`<p>${t('noUsers')}</p>`}</div>`, {wide:true}); }
+
 function updateProfileButton(){
-  const name = $('#profileName');
-  const avatar = $('#profileAvatar');
-  if(!name || !avatar) return;
-  renderProfileMenuItems();
-  name.textContent = currentUser ? (currentUser.name || t('userRole')) : t('loginShort');
-  if(currentUser?.avatar){
-    avatar.innerHTML = `<img src="${currentUser.avatar}" alt="">`;
-  } else {
-    avatar.innerHTML = defaultAvatarSvg();
-  }
-}
-function setAuthMode(mode){
-  authMode = mode === 'register' ? 'register' : 'login';
-  $$('.auth-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === authMode));
-  $('#nameWrap')?.classList.toggle('hidden', authMode !== 'register');
-  $('#confirmWrap')?.classList.toggle('hidden', authMode !== 'register');
-  clearAuthErrors();
-  updateAuthTexts();
-}
-function updateAuthTexts(){
-  if(!$('#authTitle')) return;
-  $('#authTitle').textContent = authMode === 'register' ? t('registerTitle') : t('loginTitle');
-  $('#authSubmit').textContent = authMode === 'register' ? t('registerButton') : t('loginButton');
-  $('#resendVerificationBtn') && ($('#resendVerificationBtn').textContent = t('resendVerification'));
-  $('#checkVerificationBtn') && ($('#checkVerificationBtn').textContent = t('checkVerification'));
-  $('#googleAuthBtn [data-i18n]') && ($('#googleAuthBtn [data-i18n]').textContent = t(authMode === 'register' ? 'googleRegister' : 'googleLogin'));
-  $('#forgotPasswordBtn') && ($('#forgotPasswordBtn').textContent = t('forgotPassword'));
-  $('#resetTitle') && ($('#resetTitle').textContent = t('resetTitle'));
-  $('#resetHint') && ($('#resetHint').textContent = t('resetEmailText'));
-  $('#sendResetBtn') && ($('#sendResetBtn').textContent = t('sendResetLink'));
-  $('#confirmResetBtn') && ($('#confirmResetBtn').textContent = t('resetPasswordButton'));
-}
-function openAuthModal(mode='login'){
-  setAuthMode(mode);
-  showAuthStatus('');
-  setVerifyActionsVisible(false);
-  $('#authModal').classList.add('open');
-  $('#authModal').setAttribute('aria-hidden','false');
-  setTimeout(() => $('#authEmail')?.focus(), 80);
-}
-function closeAuthModal(){
-  $('#authModal').classList.remove('open');
-  $('#authModal').setAttribute('aria-hidden','true');
-  clearAuthErrors();
-  showAuthStatus('');
-  setVerifyActionsVisible(false);
-}
-function clearAuthErrors(){
-  $$('.field').forEach(f => f.classList.remove('invalid'));
-  $$('.field-error').forEach(e => e.textContent = '');
-}
-function setFieldError(inputId, errorId, message){
-  const input = $('#' + inputId);
-  const err = $('#' + errorId);
-  input?.closest('.field')?.classList.add('invalid');
-  if(err) err.textContent = message;
-}
-function isValidEmail(email){
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-}
-function validateAuthForm(){
-  clearAuthErrors();
-  let ok = true;
-  const name = $('#authName')?.value.trim() || '';
-  const email = $('#authEmail')?.value.trim() || '';
-  const pass = $('#authPassword')?.value || '';
-  const confirm = $('#authPasswordConfirm')?.value || '';
-  if(authMode === 'register' && !name){ setFieldError('authName','nameError',t('fieldRequired')); ok = false; }
-  if(!email){ setFieldError('authEmail','emailError',t('fieldRequired')); ok = false; }
-  else if(!isValidEmail(email)){ setFieldError('authEmail','emailError',t('emailInvalid')); ok = false; }
-  if(!pass){ setFieldError('authPassword','passwordError',t('fieldRequired')); ok = false; }
-  else if(pass.length < 6){ setFieldError('authPassword','passwordError',t('passwordTooShort')); ok = false; }
-  if(authMode === 'register'){
-    if(!confirm){ setFieldError('authPasswordConfirm','confirmError',t('fieldRequired')); ok = false; }
-    else if(pass && confirm !== pass){ setFieldError('authPasswordConfirm','confirmError',t('passwordsDontMatch')); ok = false; }
-  }
-  return ok;
+  const name=$('#profileName'), avatar=$('#profileAvatar'), wrap=$('#profileWrap'); if(!name||!avatar) return;
+  const p=currentProfile(); name.textContent = currentUser ? (p?.name || currentUser.name || t('roleUser')) : t('loginShort'); avatar.innerHTML = p?.avatar ? `<img src="${escapeHtml(p.avatar)}" alt="">` : defaultAvatarSvg();
+  wrap?.classList.toggle('has-notifications', unreadCount()>0); renderProfileMenuItems();
 }
 function renderProfileMenuItems(){
-  const menu = $('#profileMenu');
-  if(!menu) return;
-  const unread = getNotifications().filter(n=>!n.read).length;
-  if(currentUser){
-    menu.innerHTML = `
-      <button type="button" role="menuitem" data-profile-action="profile">${t('menuProfile')}</button>
-      <button type="button" role="menuitem" data-profile-action="mods">${t('menuMyMods')}</button>
-      <button type="button" role="menuitem" data-profile-action="favorites">${t('menuFavorites')}</button>
-      <button type="button" role="menuitem" data-profile-action="notifications">${t('menuNotifications')}${unread?` <b class="menu-dot">${unread}</b>`:''}</button>
-      <button type="button" role="menuitem" data-profile-action="settings">${t('menuSettings')}</button>
-      <button type="button" role="menuitem" data-profile-action="logout">${t('menuLogout')}</button>`;
-  }else{
-    menu.innerHTML = `<button type="button" role="menuitem" data-profile-action="login">${t('loginOrRegister')}</button>`;
-  }
+  const menu=$('#profileMenu'); if(!menu) return;
+  if(!currentUser){ menu.innerHTML=`<button type="button" role="menuitem" data-profile-action="login">${t('loginOrRegister')}</button>`; return; }
+  menu.innerHTML = `<button type="button" role="menuitem" data-profile-action="profile">${t('menuProfile')}</button><button type="button" role="menuitem" data-profile-action="notifications">${t('menuNotifications')}${unreadCount()?` <span class="menu-badge">${unreadCount()}</span>`:''}</button><button type="button" role="menuitem" data-profile-action="favorites">${t('menuFavorites')}</button><button type="button" role="menuitem" data-profile-action="mods">${t('menuMyMods')}</button><button type="button" role="menuitem" data-profile-action="settings">${t('menuSettings')}</button>${canAdmin(currentProfile())?`<button type="button" role="menuitem" data-profile-action="admin">${t('menuAdmin')}</button>`:''}<button type="button" role="menuitem" data-profile-action="logout">${t('menuLogout')}</button>`;
 }
+function closeProfileMenu(){ $('#profileWrap')?.classList.remove('open'); $('#profileBtn')?.setAttribute('aria-expanded','false'); $('#profileMenu')?.setAttribute('aria-hidden','true'); }
+function positionProfileMenu(){ const btn=$('#profileBtn'), menu=$('#profileMenu'), wrap=$('#profileWrap'); if(!btn||!menu||!wrap?.classList.contains('open')) return; const rect=btn.getBoundingClientRect(), gap=8, margin=10; const width=Math.min(220, window.innerWidth-margin*2); menu.style.position='fixed'; menu.style.left=Math.min(Math.max(rect.right-width, margin), window.innerWidth-width-margin)+'px'; menu.style.top=(rect.bottom+gap)+'px'; menu.style.width=width+'px'; menu.style.maxHeight=Math.max(130, window.innerHeight-rect.bottom-24)+'px'; }
+function toggleProfileMenu(){ closeCustomSelects(); const wrap=$('#profileWrap'), menu=$('#profileMenu'), btn=$('#profileBtn'); const open=!wrap.classList.contains('open'); wrap.classList.toggle('open', open); menu.setAttribute('aria-hidden', String(!open)); btn.setAttribute('aria-expanded', String(open)); if(open) requestAnimationFrame(positionProfileMenu); }
 
-function positionProfileMenu(){
-  const btn = $('#profileBtn');
-  const menu = $('#profileMenu');
-  const wrap = $('#profileWrap');
-  if(!btn || !menu || !wrap?.classList.contains('open')) return;
-  const rect = btn.getBoundingClientRect();
-  const gap = 8, margin = 10;
-  const width = Math.min(190, window.innerWidth - margin * 2);
-  const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
-  const top = rect.bottom + gap;
-  menu.style.position = 'fixed';
-  menu.style.left = left + 'px';
-  menu.style.right = 'auto';
-  menu.style.top = top + 'px';
-  menu.style.width = width + 'px';
-  menu.style.maxHeight = Math.max(130, window.innerHeight - top - margin) + 'px';
-}
-function profileKey(uid){ return 'polux.profile.' + (uid || currentUser?.uid || currentUser?.email || 'guest'); }
-function allProfilesKey(){ return 'polux.profiles.index'; }
-function publicUserId(uid){
-  const src = String(uid || 'local'); let hash = 0;
-  for(let i=0;i<src.length;i++) hash = ((hash << 5) - hash + src.charCodeAt(i)) >>> 0;
-  return 'PLX-' + String(hash % 1000000).padStart(6,'0');
-}
-function escapeHtml(value){ return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-async function compressImageToDataUrl(file, kind='avatar'){
-  const maxSide = kind === 'cover' ? 1280 : 420;
-  const quality = kind === 'cover' ? .78 : .82;
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', quality);
-}
-function upsertProfileIndex(profile){
-  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  index[profile.uid] = {uid:profile.uid, publicId:profile.publicId || publicUserId(profile.uid), name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating, email:profile.email, roles:profile.roles, mutedUntil:profile.mutedUntil || null, bannedUntil:profile.bannedUntil || null, deletedAt:profile.deletedAt || null, updatedAt:profile.updatedAt || profile.lastOnline || ''};
-  localStorage.setItem(allProfilesKey(), JSON.stringify(index));
-}
+function setAuthMode(mode){ authMode=mode==='register'?'register':'login'; $$('.auth-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===authMode)); $('#nameWrap')?.classList.toggle('hidden', authMode!=='register'); $('#confirmWrap')?.classList.toggle('hidden', authMode!=='register'); $('#authTitle') && ($('#authTitle').textContent=authMode==='register'?t('registerTitle'):t('loginTitle')); $('#authSubmit') && ($('#authSubmit').textContent=authMode==='register'?t('registerButton'):t('loginButton')); }
+function openAuthModal(mode='login'){ setAuthMode(mode); $('#authModal')?.classList.add('open'); $('#authModal')?.setAttribute('aria-hidden','false'); setTimeout(()=>$('#authEmail')?.focus(),80); }
+function closeAuthModal(){ $('#authModal')?.classList.remove('open'); $('#authModal')?.setAttribute('aria-hidden','true'); }
+function showAuthStatus(message,type='info'){ const el=$('#authStatus'); if(el){ el.textContent=message||''; el.className='auth-status' + (message?' show '+type:''); } }
+function clearAuthErrors(){ $$('.field-error').forEach(e=>e.textContent=''); $$('.field.invalid').forEach(f=>f.classList.remove('invalid')); }
+function setFieldError(inputId,errorId,msg){ $('#'+inputId)?.closest('.field')?.classList.add('invalid'); const e=$('#'+errorId); if(e) e.textContent=msg; }
+function validateAuthForm(){ clearAuthErrors(); let ok=true; const email=$('#authEmail')?.value.trim()||'', pass=$('#authPassword')?.value||'', name=$('#authName')?.value.trim()||'', c=$('#authPasswordConfirm')?.value||''; if(authMode==='register'&&!name){setFieldError('authName','nameError',t('fieldRequired'));ok=false;} if(!/^\S+@\S+\.\S+$/.test(email)){setFieldError('authEmail','emailError',t('emailInvalid'));ok=false;} if(pass.length<6){setFieldError('authPassword','passwordError',t('passwordTooShort'));ok=false;} if(authMode==='register'&&pass!==c){setFieldError('authPasswordConfirm','confirmError',t('passwordsDontMatch'));ok=false;} return ok; }
+function authErrorMessage(error){ const code=error?.code||''; if(code.includes('email-already-in-use')) return t('authEmailInUse'); if(code.includes('wrong-password')||code.includes('invalid-credential')||code.includes('user-not-found')) return t('authWrongCredentials'); if(code.includes('network')) return t('authNetworkError'); return error?.message || t('authNetworkError'); }
+async function sendVerification(user){ if(user?.sendEmailVerification) await user.sendEmailVerification({url: location.href.split('#')[0]+'#profile'}); }
+function setVerifyActionsVisible(v){ $('#verifyActions')?.classList.toggle('hidden', !v); }
 
-const POLUX_OWNER_EMAILS = ['vitaliysh0705@gmail.com'];
-function normalizeRole(role){ return String(role || '').trim(); }
-function hasRole(profile, role){ return (profile?.roles || []).includes(role); }
-function isAdminProfile(profile){ return hasRole(profile, 'roleAdministrator') || hasRole(profile, 'roleModerator'); }
-function ratingRoleKeys(rating=0){
-  const score = Number(rating || 0);
-  if(score >= 1000) return ['roleLegend'];
-  if(score >= 500) return ['roleMaster'];
-  if(score >= 250) return ['roleFarmer'];
-  if(score >= 100) return ['roleDriver'];
-  if(score >= 30) return ['roleMechanic'];
-  return ['roleRookie'];
-}
-function baseAccessRoles(user=currentUser, base={}){
-  const roles = new Set(base.roles || []);
-  roles.add('roleUser');
-  if(user?.emailVerified) roles.add('titleVerified');
-  if(user?.email && POLUX_OWNER_EMAILS.includes(String(user.email).toLowerCase())) roles.add('roleAdministrator');
-  return [...roles];
-}
-async function syncProfileToCloud(profile){
-  try{ await window.PoluxDbService?.saveUserProfile?.(profile); }catch(_){}
-}
-async function pullProfileFromCloud(uid=currentUser?.uid){
-  try{
-    const cloud = await window.PoluxDbService?.getUserProfile?.(uid);
-    if(cloud && uid){
-      const local = readProfile(uid);
-      const merged = {...local, ...cloud, uid, publicId:cloud.publicId || publicUserId(uid)};
-      localStorage.setItem(profileKey(uid), JSON.stringify(merged));
-      upsertProfileIndex(merged);
-      return merged;
-    }
-  }catch(_){}
-  return null;
-}
-async function syncUsersIndexFromCloud(){
-  try{
-    const list = await window.PoluxDbService?.getAllUserProfiles?.(100);
-    if(!list?.length) return [];
-    list.forEach(profile => {
-      const p = {...profile, uid:profile.uid, publicId:profile.publicId || publicUserId(profile.uid)};
-      localStorage.setItem(profileKey(p.uid), JSON.stringify({...readProfile(p.uid), ...p}));
-      upsertProfileIndex(p);
-    });
-    return list;
-  }catch(_){ return []; }
-}
-function sessionId(){
-  let id = localStorage.getItem('polux.session.id');
-  if(!id){ id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('polux.session.id', id); }
-  return id;
-}
-function readProfile(uid=currentUser?.uid){
-  const own = !uid || uid === currentUser?.uid || uid === currentUser?.email;
-  const user = own ? (currentUser || {}) : {};
-  const keyUid = uid || user.uid || user.email || 'local';
-  const raw = localStorage.getItem(profileKey(keyUid));
-  const now = new Date().toISOString();
-  const base = raw ? JSON.parse(raw) : {};
-  const profileUid = uid || user.uid || base.uid || user.email || 'local';
-  return {
-    uid: profileUid,
-    publicId: base.publicId || publicUserId(profileUid),
-    name: base.name || user.name || user.email?.split('@')[0] || (own ? t('userRole') : profileUid),
-    email: base.email || user.email || '',
-    avatar: base.avatar || user.avatar || '', cover: base.cover || '', bio: base.bio || '',
-    roles: [...new Set([...baseAccessRoles(user, base), ...ratingRoleKeys(Number(base.rating || 0))])],
-    rating: Number(base.rating || 0), modsCount: Number(base.modsCount || 0), comments: base.comments || [],
-    createdAt: base.createdAt || user.metadata?.creationTime || now, lastOnline: base.lastOnline || now,
-    nameChanges: base.nameChanges || [], deletedAt: base.deletedAt || null,
-    thanksFrom: base.thanksFrom || {}, reports: base.reports || [], sessions: base.sessions || [],
-    mutedUntil: base.mutedUntil || null, bannedUntil: base.bannedUntil || null, updatedAt: base.updatedAt || now
-  };
-}
-function writeProfile(profile){
-  profile.lastOnline = new Date().toISOString();
-  localStorage.setItem(profileKey(profile.uid), JSON.stringify(profile));
-  profile.publicId = profile.publicId || publicUserId(profile.uid);
-  upsertProfileIndex(profile);
-  syncProfileToCloud(profile);
-  if(currentUser && (profile.uid === currentUser.uid || profile.email === currentUser.email)){
-    currentUser = {...currentUser, name:profile.name, avatar:profile.avatar};
-    localStorage.setItem(STORAGE.user, JSON.stringify(currentUser));
-    updateProfileButton();
-  }
-}
-function touchSession(){
-  if(!currentUser) return;
-  const p = readProfile();
-  const ua = navigator.userAgent;
-  const item = {id:sessionId(), userAgent:ua, browser:detectBrowser(), platform:navigator.platform || 'Android', language:navigator.language || currentLang, lastSeen:new Date().toISOString(), current:true};
-  p.sessions = [item, ...(p.sessions || []).filter(s => s.id !== item.id)].slice(0, 8);
-  writeProfile(p);
-}
-function detectBrowser(){ const ua=navigator.userAgent; if(/Edg/i.test(ua)) return 'Edge'; if(/Firefox/i.test(ua)) return 'Firefox'; if(/OPR|Opera/i.test(ua)) return 'Opera'; if(/Chrome/i.test(ua)) return 'Chrome'; if(/Safari/i.test(ua)) return 'Safari'; return 'Browser'; }
-function formatDateShort(value){ if(!value) return t('never'); try{return new Date(value).toLocaleDateString(currentLang,{year:'numeric',month:'short',day:'numeric'});}catch(e){return value;} }
-function daysRegistered(value){ const d=value?new Date(value):new Date(); const days=Math.max(0,Math.floor((Date.now()-d.getTime())/86400000)); return days===0?t('today'):`${days} ${days===1?t('day'):t('days')}`; }
-function defaultCover(){ return `<div class="profile-cover-default"><span>POLUX MODS</span><small>${t('defaultCover')}</small></div>`; }
-function profileAvatarHtml(p, big=true){ return p.avatar ? `<img src="${p.avatar}" alt="">` : defaultAvatarSvg(); }
-function ensureCurrentProfile(){ if(!currentUser) return null; const p=readProfile(); writeProfile(p); touchSession(); return readProfile(); }
+function renderFlagOption(value, text){ const cls={uk:'uk',ru:'ru',en:'en',pl:'pl',de:'de',es:'es',fr:'fr'}[value]||'uk'; return `<span class="lang-option"><span class="retro-flag retro-flag-${cls}"></span><b>${value.toUpperCase()}</b><span>${text}</span></span>`; }
+function positionCustomSelectMenu(box){ if(!box?.classList.contains('open')) return; const trigger=box.querySelector('.custom-select-trigger'), menu=box.querySelector('.custom-select-menu'); const r=trigger.getBoundingClientRect(); menu.style.position='fixed'; menu.style.left=r.left+'px'; menu.style.top=(r.bottom+7)+'px'; menu.style.width=Math.max(r.width,180)+'px'; }
+function closeCustomSelects(except){ $$('.custom-select.open').forEach(b=>{ if(b!==except){ b.classList.remove('open'); b.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded','false'); }}); }
+function syncCustomSelect(select){ if(!select) return; const box=select.closest('.custom-select'), label=box?.querySelector('.custom-select-label'); if(!box||!label) return; const opt=select.selectedOptions[0]; label.innerHTML = select.id==='langSelect' ? renderFlagOption(select.value, languageNames[select.value]||select.value) : escapeHtml(opt?.textContent||''); }
+function enhanceSelect(select){ if(!select || select.dataset.enhanced) return; select.dataset.enhanced='1'; const box=document.createElement('div'); box.className='custom-select'; select.parentNode.insertBefore(box,select); box.appendChild(select); select.classList.add('native-select-hidden'); const btn=document.createElement('button'); btn.type='button'; btn.className='custom-select-trigger'; btn.setAttribute('aria-expanded','false'); btn.innerHTML='<span class="custom-select-label"></span><span>▾</span>'; const menu=document.createElement('div'); menu.className='custom-select-menu'; box.append(btn,menu); const rebuild=()=>{ menu.innerHTML=[...select.options].map(o=>`<button type="button" data-value="${escapeHtml(o.value)}">${select.id==='langSelect'?renderFlagOption(o.value, languageNames[o.value]||o.textContent):escapeHtml(o.textContent)}</button>`).join(''); syncCustomSelect(select); }; rebuild(); btn.addEventListener('click',e=>{ e.stopPropagation(); const open=!box.classList.contains('open'); closeCustomSelects(box); box.classList.toggle('open', open); btn.setAttribute('aria-expanded',String(open)); if(open) positionCustomSelectMenu(box); }); menu.addEventListener('click',e=>{ const item=e.target.closest('[data-value]'); if(!item) return; select.value=item.dataset.value; select.dispatchEvent(new Event('change',{bubbles:true})); closeCustomSelects(); syncCustomSelect(select); }); select.addEventListener('change',()=>{rebuild(); syncCustomSelect(select);}); }
+function enhanceCustomSelects(root=document){ $$('select',root).forEach(enhanceSelect); }
 
-async function renderProfile(viewUid){
-  const box = $('#profileView');
-  if(!box) return;
-  if(!currentUser){
-    box.innerHTML = `<div class="profile-empty"><div class="profile-big-avatar">${defaultAvatarSvg()}</div><p>${t('profileGuest')}</p><button class="btn primary" type="button" id="profileLoginBtn">${t('openLogin')}</button></div>`;
-    $('#profileLoginBtn').addEventListener('click', () => openAuthModal('login'));
-    return;
-  }
-  const ownProfile = ensureCurrentProfile();
-  let p = ownProfile;
-  if(viewUid && viewUid !== ownProfile.uid){
-    p = readProfile(viewUid);
-    const cloud = await pullProfileFromCloud(viewUid);
-    if(cloud) p = cloud;
-  }
-  if(p.deletedAt){
-    const canRecover = Date.now() - new Date(p.deletedAt).getTime() <= 30*86400000;
-    box.innerHTML = `<div class="profile-empty"><div class="profile-big-avatar">${profileAvatarHtml(p)}</div><h2>${t('recoverAccount')}</h2><p>${t('recoverAccountText')}</p>${canRecover?`<button class="btn primary" id="recoverAccountBtn">${t('recoverAccount')}</button>`:''}</div>`;
-    $('#recoverAccountBtn')?.addEventListener('click', () => { p.deletedAt=null; writeProfile(p); alert(t('accountRecovered')); renderProfile(); });
-    return;
-  }
-  const isOwn = !viewUid || viewUid === ownProfile.uid;
-  const canModerate = !isOwn && isAdminProfile(ownProfile);
-  const roles = (p.roles || ['titleUser']).map(r => `<span class="profile-rank">${t(r)}</span>`).join('');
-  const commentsCount = (p.comments || []).length;
-  const modsByUser = modsSource.filter(m => (m.author || '').toLowerCase() === (p.name || '').toLowerCase());
-  box.innerHTML = `
-    <div class="profile-hero-card">
-      <div class="profile-cover">${p.cover ? `<img src="${p.cover}" alt="">` : defaultCover()}</div>
-      <div class="profile-headline">
-        <div class="profile-big-avatar floating">${profileAvatarHtml(p)}</div>
-        <div class="profile-main-info">
-          <h2 data-no-translate>${escapeHtml(p.name)}</h2>
-          <div class="profile-public-id"><span>${t('profileId')}</span><b>${p.publicId || publicUserId(p.uid)}</b></div>
-          <div class="profile-ranks">${roles}</div>
-          ${p.bio ? `<p class="profile-bio" data-auto-translate>${translateText(p.bio,currentLang)}</p>` : ''}
-        </div>
-      </div>
-      <div class="profile-stats-grid">
-        <div><strong>${t('lastOnline')}</strong><span>${formatDateShort(p.lastOnline)}</span></div>
-        <div><strong>${t('registeredAt')}</strong><span>${formatDateShort(p.createdAt)} · ${t('registeredFor')} ${daysRegistered(p.createdAt)}</span></div>
-        <div><strong>${t('profileId')}</strong><span>${p.publicId || publicUserId(p.uid)}</span><small>${t('userIdHint')}</small></div>
-        <div><strong>${t('userRating')}</strong><span>${p.rating}</span></div>
-        <button class="stat-button" type="button" id="viewUserMods"><strong>${t('userMods')}</strong><span>${modsByUser.length || p.modsCount} · ${t('viewUserMods')}</span></button>
-        <button class="stat-button" type="button" id="viewUserComments"><strong>${t('comments')}</strong><span>${commentsCount} · ${t('viewComments')}</span></button>
-      </div>
-      <div class="profile-actions-row">
-        ${isOwn ? `${isAdminProfile(p)?`<button class="btn admin-panel-btn" id="openAdminPanel">${t('adminPanel')}</button>`:''}<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `${canModerate?`<button class="btn admin-panel-btn" id="moderateViewedUser">${t('moderateUser')}</button>`:''}<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
-      </div>
-    </div>`;
-  $('#openAdminPanel')?.addEventListener('click', () => location.hash = '#admin');
-  $('#openProfileSettings')?.addEventListener('click', () => location.hash = '#profile-settings');
-  $('#moderateViewedUser')?.addEventListener('click', () => location.hash = '#admin?user=' + encodeURIComponent(p.uid));
-  $('#profileLogoutBtn')?.addEventListener('click', () => { getFirebaseAuth()?.signOut?.(); saveUser(null); });
-  $('#viewUserMods')?.addEventListener('click', () => location.hash = '#my-mods');
-  $('#viewUserComments')?.addEventListener('click', () => openCommentsModal(p));
-  $('#reportUserBtn')?.addEventListener('click', () => openReportModal(p));
-  $('#thanksUserBtn')?.addEventListener('click', () => sendThanks(p));
-}
-
-function positionCustomSelectMenu(box){
-  const trigger = $('.custom-select-trigger', box);
-  const menu = box && box._customMenu ? box._customMenu : $('.custom-select-menu', box);
-  if(!trigger || !menu) return;
-  const rect = trigger.getBoundingClientRect();
-  const gap = 8;
-  const margin = 10;
-  const width = Math.min(190, window.innerWidth - margin * 2);
-  const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
-  const top = rect.bottom + gap;
-  menu.style.width = width + 'px';
-  menu.style.left = left + 'px';
-  menu.style.top = top + 'px';
-  menu.style.maxHeight = Math.max(140, window.innerHeight - top - margin) + 'px';
-}
-
-function closeCustomSelects(except){
-  $$('.custom-select.open').forEach(box => {
-    if(box !== except){
-      box.classList.remove('open');
-      (box._customMenu || $('.custom-select-menu', box))?.classList.remove('open');
-      $('.custom-select-trigger', box)?.setAttribute('aria-expanded','false');
-    }
-  });
-}
-
-function syncCustomSelect(select){
-  if(!select) return;
-  const box = select.closest('.custom-select');
-  if(!box) return;
-  const trigger = $('.custom-select-trigger', box);
-  const menu = box._customMenu || $('.custom-select-menu', box);
-  const selected = select.options[select.selectedIndex];
-  const optionHtml = opt => select.id === 'langSelect' ? `<span class="retro-flag retro-flag-${opt.value}"><i></i></span><b>${String(opt.value).toUpperCase()}</b>` : opt.textContent;
-  if(select.id === 'langSelect') trigger.innerHTML = selected ? optionHtml(selected) : '';
-  else trigger.textContent = selected ? selected.textContent : '';
-  menu.innerHTML = [...select.options].map(opt => `
-    <button type="button" class="custom-option${select.id === 'langSelect' ? ' lang-option' : ''}${opt.selected ? ' selected' : ''}" data-value="${opt.value}">${optionHtml(opt)}</button>`).join('');
-}
-
-function enhanceSelect(select){
-  if(!select || select.dataset.customReady === 'yes') { if(select) syncCustomSelect(select); return; }
-  select.dataset.customReady = 'yes';
-  select.classList.add('native-select-hidden');
-  const box = document.createElement('div');
-  box.className = 'custom-select';
-  const trigger = document.createElement('button');
-  trigger.type = 'button';
-  trigger.className = 'custom-select-trigger';
-  trigger.setAttribute('aria-haspopup','listbox');
-  trigger.setAttribute('aria-expanded','false');
-  const menu = document.createElement('div');
-  menu.className = 'custom-select-menu';
-  menu.setAttribute('role','listbox');
-  select.parentNode.insertBefore(box, select);
-  box.appendChild(select);
-  box.appendChild(trigger);
-  document.body.appendChild(menu);
-  box._customMenu = menu;
-  syncCustomSelect(select);
-  trigger.addEventListener('click', () => {
-    const willOpen = !box.classList.contains('open');
-    closeCustomSelects(box);
-    box.classList.toggle('open', willOpen);
-    menu.classList.toggle('open', willOpen);
-    trigger.setAttribute('aria-expanded', String(willOpen));
-    if(willOpen) requestAnimationFrame(() => positionCustomSelectMenu(box));
-  });
-  menu.addEventListener('click', e => {
-    const option = e.target.closest('.custom-option');
-    if(!option) return;
-    select.value = option.dataset.value;
-    select.dispatchEvent(new Event('change', {bubbles:true}));
-    syncCustomSelect(select);
-    box.classList.remove('open');
-    menu.classList.remove('open');
-    trigger.setAttribute('aria-expanded','false');
-  });
-  select.addEventListener('change', () => syncCustomSelect(select));
-}
-function enhanceCustomSelects(root = document){ $$('select', root).forEach(enhanceSelect); }
-
-window.addEventListener('scroll', () => $$('.custom-select.open').forEach(positionCustomSelectMenu), true);
-window.addEventListener('resize', () => $$('.custom-select.open').forEach(positionCustomSelectMenu));
-window.addEventListener('scroll', positionProfileMenu, true);
-window.addEventListener('resize', positionProfileMenu);
-window.addEventListener('hashchange', route);
-$('#menuBtn').addEventListener('click', () => $('#nav').classList.toggle('open'));
-$('#themeSelect').addEventListener('change', e => {currentTheme=e.target.value;localStorage.setItem(STORAGE.theme,currentTheme);applyTheme();});
-$('#langSelect').addEventListener('change', e => {currentLang=normalizeLang(e.target.value);localStorage.setItem(STORAGE.lang,currentLang);applyI18n();route();});
-$('#crtToggle').addEventListener('click', () => {crtOn=!crtOn;localStorage.setItem(STORAGE.crt,crtOn?'on':'off');applyTheme();applyI18n();});
-
-function closeProfileMenu(){
-  $('#profileWrap')?.classList.remove('open');
-  $('#profileBtn')?.setAttribute('aria-expanded','false');
-  $('#profileMenu')?.setAttribute('aria-hidden','true');
-}
-function toggleProfileMenu(){
-  closeCustomSelects();
-  const wrap = $('#profileWrap');
-  const btn = $('#profileBtn');
-  const menu = $('#profileMenu');
-  const open = !wrap.classList.contains('open');
-  wrap.classList.toggle('open', open);
-  btn.setAttribute('aria-expanded', String(open));
-  menu.setAttribute('aria-hidden', String(!open));
-  if(open) requestAnimationFrame(positionProfileMenu);
-}
-$('#profileBtn').addEventListener('click', toggleProfileMenu);
-$('#profileMenu').addEventListener('click', e => {
-  const action = e.target.closest('[data-profile-action]')?.dataset.profileAction;
-  if(!action) return;
-  closeProfileMenu();
-  if(action === 'login') openAuthModal('login');
-  if(action === 'profile') currentUser ? location.hash = '#profile' : openAuthModal('login');
-  if(action === 'mods') currentUser ? location.hash = '#my-mods' : openAuthModal('login');
-  if(action === 'favorites') currentUser ? location.hash = '#favorites' : openAuthModal('login');
-  if(action === 'notifications') currentUser ? location.hash = '#notifications' : openAuthModal('login');
-  if(action === 'settings') currentUser ? location.hash = '#profile-settings' : openAuthModal('login');
-  if(action === 'logout'){ getFirebaseAuth()?.signOut?.(); saveUser(null); }
+// Global delegated events
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-open-login]')) openAuthModal('login');
+  const link=e.target.closest('[data-link]'); if(link) closeProfileMenu();
+  const tab=e.target.closest('[data-tab-open]'); if(tab){ const panel=tab.closest('.tabs-panel'); $$('.admin-tabs button', panel).forEach(b=>b.classList.toggle('active', b===tab)); $$('[data-tab]', panel).forEach(body=>body.classList.toggle('hidden', body.dataset.tab!==tab.dataset.tabOpen)); }
+  const block=e.target.closest('[data-admin-block]'); if(block) renderAdminBlock(block.dataset.adminBlock);
+  const close=e.target.closest('[data-close-modal]'); if(close) $('#'+close.dataset.closeModal)?.remove();
+  const menuBtn=e.target.closest('[data-card-menu]'); if(menuBtn){ const id=menuBtn.dataset.cardMenu; $$(`.rich-card.menu-open`).forEach(x=>{if(x.dataset.cardId!==id)x.classList.remove('menu-open')}); menuBtn.closest('.rich-card')?.classList.toggle('menu-open'); }
+  const fav=e.target.closest('[data-toggle-fav]'); if(fav){ if(!currentUser){ openAuthModal('login'); return; } const itemId=fav.dataset.toggleFav; const key=currentUid()+':'+itemId; if(DB.favorites[key]) delete DB.favorites[key]; else DB.favorites[key]={userId:currentUid(), itemId, createdAt:nowIso()}; persistDb(); route(); }
+  const report=e.target.closest('[data-open-report]'); if(report) openReportModal(report.dataset.openReport);
+  const rate=e.target.closest('[data-rate]'); if(rate){ if(!currentUser){ openAuthModal('login'); return; } const itemId=rate.closest('[data-rating-for]')?.dataset.ratingFor; const key=currentUid()+':'+itemId; DB.ratings[key]={userId:currentUid(), itemId, value:Number(rate.dataset.rate), createdAt:DB.ratings[key]?.createdAt||nowIso(), updatedAt:nowIso()}; persistDb(); route(); }
+  const gallery=e.target.closest('[data-gallery-src]'); if(gallery){ const src=gallery.dataset.gallerySrc; $('#galleryMain').innerHTML=`<img src="${escapeHtml(src)}" alt="">`; $('#galleryMain').dataset.zoomSrc=src; $$('.thumb').forEach(t=>t.classList.toggle('active', t===gallery)); }
+  const zoom=e.target.closest('[data-zoom-src]'); if(zoom?.dataset.zoomSrc) openModal('', `<div class="zoom-box"><img src="${escapeHtml(zoom.dataset.zoomSrc)}" alt=""></div>`, {wide:true});
+  const reply=e.target.closest('[data-comment-reply]'); if(reply){ if(!currentUser){ openAuthModal('login'); return; } const id=reply.dataset.commentReply; const slot=$(`[data-reply-slot="${id}"]`); const to=DB.comments[id]; slot.innerHTML=`<form class="comment-form compact" data-comment-form data-parent-id="${id}"><textarea maxlength="800">@${userName(to.authorId)}, </textarea><button class="btn primary">${t('reply')}</button></form>`; slot.querySelector('textarea').focus(); }
+  const vote=e.target.closest('[data-comment-vote]'); if(vote){ const [dir,id]=vote.dataset.commentVote.split(':'); if(DB.comments[id]){ DB.comments[id][dir]=(DB.comments[id][dir]||0)+1; persistDb(); route(); }}
+  const del=e.target.closest('[data-comment-delete]'); if(del && DB.comments[del.dataset.commentDelete]){ DB.comments[del.dataset.commentDelete].deletedAt=nowIso(); persistDb(); route(); }
+  const edit=e.target.closest('[data-comment-edit]'); if(edit){ const c=DB.comments[edit.dataset.commentEdit]; const text=prompt(t('edit'), c.text); if(text!==null){ c.text=text; c.updatedAt=nowIso(); persistDb(); route(); } }
+  const mark=e.target.closest('[data-mark-notifications]'); if(mark){ Object.values(DB.notifications).filter(n=>n.userId===currentUid()).forEach(n=>n.read=true); persistDb(); updateProfileButton(); route(); }
+  const recover=e.target.closest('[data-recover-account]'); if(recover){ const p=currentProfile(); p.deletedAt=null; persistDb(); alert(t('accountRecovered')); route(); }
+  const userDots=e.target.closest('[data-user-dots]'); if(userDots){ userDots.closest('.admin-user-row')?.classList.toggle('menu-open'); }
+  const ua=e.target.closest('[data-user-action]'); if(ua){ const [action,uid]=ua.dataset.userAction.split(':'); const p=DB.users[uid]; if(!p) return; if(action==='mute') p.mutedUntil=p.mutedUntil?null:'permanent'; if(action==='ban') p.bannedUntil=p.bannedUntil?null:'permanent'; if(action==='delete'){ p.deletedAt=p.deletedAt?null:nowIso(); alert(t('softDeleted')); } if(action==='rating') openRatingModal(uid); if(action==='roles') openRolesModal(uid); DB.users[uid]=p; persistDb(); renderAdminUsers($('#adminUserSearch')?.value||''); }
+  const ticketOpen=e.target.closest('[data-ticket-open]'); if(ticketOpen){ const card=ticketOpen.closest('[data-admin-ticket]'); openTicketModal(ticketOpen.dataset.ticketOpen, card.dataset.ticketSource); }
+  const ticketSave=e.target.closest('[data-ticket-save]'); if(ticketSave){ const modal=ticketSave.closest('.auth-modal'); const src=modal.dataset.ticketSource, id=modal.dataset.ticketId; const ticket=DB[src][id]; ticket.answer=$('#ticketAnswer',modal).value; ticket.updatedAt=nowIso(); if(ticket.authorId) addNotification(ticket.authorId,'reply',t('notificationReply'),'#feedback'); persistDb(); modal.remove(); renderAdminBlock('tickets'); }
+  const ticketStatus=e.target.closest('[data-ticket-status]'); if(ticketStatus){ const modal=ticketStatus.closest('.auth-modal'); const ticket=DB[modal.dataset.ticketSource][modal.dataset.ticketId]; ticket.status=ticketStatus.dataset.ticketStatus; ticket.updatedAt=nowIso(); persistDb(); modal.remove(); renderAdminBlock('tickets'); }
+  const ticketDelete=e.target.closest('[data-ticket-delete]'); if(ticketDelete){ const modal=ticketDelete.closest('.auth-modal'); delete DB[modal.dataset.ticketSource][modal.dataset.ticketId]; persistDb(); modal.remove(); renderAdminBlock('tickets'); }
+  const homeClear=e.target.closest('#homeClearBtn'); if(homeClear){ $('#homeHeroTitle').value=''; $('#homeHeroText').value=''; $('#homeHeroTractor').value=''; }
+  const addBlock=e.target.closest('[data-add-content-block]'); if(addBlock) addBuilderBlock('text');
+  const removeBlock=e.target.closest('[data-remove-block]'); if(removeBlock) removeBlock.closest('[data-builder-block]').remove();
+  const prev=e.target.closest('[data-preview-suggestion]'); if(prev) renderModDetail(prev.dataset.previewSuggestion, DB.suggestions[prev.dataset.previewSuggestion]);
+  const approve=e.target.closest('[data-approve-suggestion]'); if(approve){ const s=DB.suggestions[approve.dataset.approveSuggestion]; if(s){ s.status='published'; s.publishedAt=nowIso(); DB.mods[s.id]=s; delete DB.suggestions[s.id]; persistDb(); renderAdminBlock('suggested'); }}
+  const reject=e.target.closest('[data-reject-suggestion]'); if(reject && DB.suggestions[reject.dataset.rejectSuggestion]){ DB.suggestions[reject.dataset.rejectSuggestion].status='rejected'; persistDb(); renderAdminBlock('suggested'); }
+  const roleDots=e.target.closest('[data-role-dots]'); if(roleDots){ roleDots.closest('.role-row')?.classList.toggle('menu-open'); }
+  const roleAdd=e.target.closest('[data-role-add]'); if(roleAdd) openRoleEditor();
+  const roleEdit=e.target.closest('[data-role-edit]'); if(roleEdit) openRoleEditor(roleEdit.dataset.roleEdit);
+  const roleUsers=e.target.closest('[data-role-users]'); if(roleUsers) openRoleUsers(roleUsers.dataset.roleUsers);
+  const roleDelete=e.target.closest('[data-role-delete]'); if(roleDelete){ const role=roleById(roleDelete.dataset.roleDelete); if(role.protected) return alert('Protected'); if(confirm(t('confirmDeleteRole'))){ DB.roles=DB.roles.filter(r=>r.id!==role.id); Object.values(DB.users).forEach(u=>u.roles=(u.roles||[]).filter(r=>r!==role.id)); persistDb(); renderAdminBlock('settings'); }}
 });
-
-
-function firebaseUserToLocalUser(user){
-  return {
-    name: user?.displayName || user?.email?.split('@')[0] || t('userRole'),
-    email: user?.email || '',
-    avatar: user?.photoURL || null,
-    uid: user?.uid || '',
-    emailVerified: !!user?.emailVerified,
-    firebase: true,
-    provider: user?.providerData?.[0]?.providerId || 'firebase'
-  };
-}
-async function loginWithGoogle(){
-  showAuthStatus('', 'info');
-  const btn = $('#googleAuthBtn');
-  if(btn) btn.disabled = true;
-  try{
-    let cred = null;
-    if(window.PoluxAuthService){
-      cred = await window.PoluxAuthService.signInWithGoogle(currentLang);
-    }else{
-      const auth = getFirebaseAuth();
-      if(!auth) throw new Error(t('firebaseConfigMissing'));
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({prompt:'select_account'});
-      cred = await auth.signInWithPopup(provider);
-    }
-    if(!cred) return;
-    saveUser(firebaseUserToLocalUser(cred.user));
-    pullProfileFromCloud(cred.user.uid).then(p=>{ if(p) updateProfileButton(); });
-    closeAuthModal();
-    location.hash = '#profile';
-  }catch(err){
-    showAuthStatus(authErrorMessage(err) || t('googleLoginFailed'), 'error');
-  }finally{
-    if(btn) btn.disabled = false;
-  }
-}
-function showResetStatus(message, type='info'){
-  const el = $('#resetStatus');
-  if(!el) return;
-  el.textContent = message || '';
-  el.className = 'auth-status' + (message ? ' show ' + type : '');
-}
-function openResetModal(newPasswordMode=false){
-  $('#resetModal')?.classList.add('open');
-  $('#resetModal')?.setAttribute('aria-hidden','false');
-  $('#resetRequestForm')?.classList.toggle('hidden', !!newPasswordMode);
-  $('#newPasswordForm')?.classList.toggle('hidden', !newPasswordMode);
-  $('#resetHint') && ($('#resetHint').textContent = newPasswordMode ? t('newPassword') : t('resetEmailText'));
-  showResetStatus('');
-  clearAuthErrors();
-  setTimeout(() => (newPasswordMode ? $('#newPassword') : $('#resetEmail'))?.focus(), 80);
-}
-function closeResetModal(){
-  $('#resetModal')?.classList.remove('open');
-  $('#resetModal')?.setAttribute('aria-hidden','true');
-  showResetStatus('');
-  clearAuthErrors();
-}
-function getActionCode(){
-  const params = new URLSearchParams(location.search);
-  return params.get('oobCode') || '';
-}
-function checkResetActionFromUrl(){
-  const params = new URLSearchParams(location.search);
-  if(params.get('mode') === 'resetPassword' && params.get('oobCode')) openResetModal(true);
-}
-
-$('#authClose').addEventListener('click', closeAuthModal);
-$('#authModal').addEventListener('click', e => { if(e.target.id === 'authModal') closeAuthModal(); });
-$$('.auth-tab').forEach(btn => btn.addEventListener('click', () => setAuthMode(btn.dataset.mode)));
-
-$('#googleAuthBtn')?.addEventListener('click', loginWithGoogle);
-$('#forgotPasswordBtn')?.addEventListener('click', () => { closeAuthModal(); openResetModal(false); });
-$('#resetClose')?.addEventListener('click', closeResetModal);
-$('#resetModal')?.addEventListener('click', e => { if(e.target.id === 'resetModal') closeResetModal(); });
-$('#resetRequestForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  clearAuthErrors();
-  const email = $('#resetEmail')?.value.trim() || '';
-  if(!email){ setFieldError('resetEmail','resetEmailError',t('fieldRequired')); return; }
-  if(!isValidEmail(email)){ setFieldError('resetEmail','resetEmailError',t('emailInvalid')); return; }
-  const auth = getFirebaseAuth();
-  if(!auth){ showResetStatus(t('firebaseConfigMissing'), 'warn'); return; }
-  $('#sendResetBtn').disabled = true;
-  try{
-    await auth.sendPasswordResetEmail(email, {url: location.origin + location.pathname});
-    showResetStatus(t('resetEmailSent'), 'ok');
-  }catch(err){ showResetStatus(authErrorMessage(err), 'error'); }
-  finally{ $('#sendResetBtn').disabled = false; }
+document.addEventListener('change', e=>{
+  const blockType=e.target.closest('[data-block-type]'); if(blockType){ const b=blockType.closest('[data-builder-block]'); b.querySelector('[data-block-content]').placeholder=blockType.value==='image'?'https://...':t('fullText'); b.querySelector('[data-block-poll-options]').classList.toggle('hidden', blockType.value!=='poll'); }
 });
-$('#newPasswordForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  clearAuthErrors();
-  const pass = $('#newPassword')?.value || '';
-  const confirm = $('#newPasswordConfirm')?.value || '';
-  if(!pass){ setFieldError('newPassword','newPasswordError',t('fieldRequired')); return; }
-  if(pass.length < 6){ setFieldError('newPassword','newPasswordError',t('passwordTooShort')); return; }
-  if(!confirm){ setFieldError('newPasswordConfirm','newPasswordConfirmError',t('fieldRequired')); return; }
-  if(pass !== confirm){ setFieldError('newPasswordConfirm','newPasswordConfirmError',t('passwordsDontMatch')); return; }
-  const auth = getFirebaseAuth();
-  const code = getActionCode();
-  if(!auth || !code){ showResetStatus(t('resetLinkInvalid'), 'error'); return; }
-  $('#confirmResetBtn').disabled = true;
-  try{
-    await auth.confirmPasswordReset(code, pass);
-    showResetStatus(t('resetPasswordSuccess'), 'ok');
-    history.replaceState({}, document.title, location.origin + location.pathname + location.hash);
-    setTimeout(() => { closeResetModal(); openAuthModal('login'); }, 900);
-  }catch(err){ showResetStatus(authErrorMessage(err), 'error'); }
-  finally{ $('#confirmResetBtn').disabled = false; }
+document.addEventListener('submit', e=>{
+  if(e.target.id==='homePublishForm'){ e.preventDefault(); DB.siteSettings.homeHero={title:$('#homeHeroTitle').value.trim(),text:$('#homeHeroText').value.trim(),tractor:$('#homeHeroTractor').value.trim()}; persistDb(); alert(t('saved')); route(); }
+  if(e.target.id==='newsPublishForm'){ e.preventDefault(); const title=$('#newsTitleInput').value.trim(); if(!title) return alert(t('fieldRequired')); const id=makeId('news'); DB.news[id]={id,title,excerpt:$('#newsExcerptInput').value.trim(),mainImage:$('#newsImageInput').value.trim(),blocks:collectBlocks(),authorId:currentUid(),status:'published',createdAt:nowIso(),publishedAt:nowIso()}; persistDb(); alert(t('published')); location.hash='#news/'+id; }
+  if(e.target.id==='modPublishForm'){ e.preventDefault(); const title=$('#modTitleInput').value.trim(); if(!title) return alert(t('fieldRequired')); const id=makeId('mod'); DB.mods[id]={id,title,shortDesc:$('#modShortInput').value.trim(),description:$('#modDescInput').value.trim(),category:$('#modCategoryInput').value.trim()||'FS Mobile',version:$('#modVersionInput').value.trim()||'1.0',devAuthor:$('#modDevAuthorInput').value.trim()||'Polux Mods',gameVersions:$$('input[name="gameVersion"]:checked').map(x=>x.value),images:$('#modImagesInput').value.split(',').map(x=>x.trim()).filter(Boolean),downloadUrl:$('#modDownloadInput').value.trim(),authorId:currentUid(),status:'published',createdAt:nowIso(),publishedAt:nowIso()}; persistDb(); alert(t('published')); location.hash='#mods/'+id; }
 });
+document.addEventListener('input', e=>{ if(e.target.closest('#authForm')) validateAuthForm(); });
+document.addEventListener('focusin', e=>{ if(e.target.matches('input,textarea')) liftFocusedField(); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.custom-select')) closeCustomSelects(); if(!e.target.closest('#profileWrap')) closeProfileMenu(); });
 
-$('#authForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  if(!validateAuthForm()) return;
-  const email = $('#authEmail').value.trim();
-  const pass = $('#authPassword').value;
-  const base = email.split('@')[0] || t('userRole');
-  const name = authMode === 'register' ? $('#authName').value.trim() : (currentUser?.name || base);
-  const auth = getFirebaseAuth();
-  $('#authSubmit').disabled = true;
-  showAuthStatus('');
+$('#menuBtn')?.addEventListener('click',()=>{ const nav=$('#nav'); const open=!nav.classList.contains('open'); nav.classList.toggle('open',open); $('#menuBtn').setAttribute('aria-expanded',String(open)); });
+$('#themeSelect')?.addEventListener('change', e=>{ currentTheme=e.target.value; localStorage.setItem(STORAGE.theme,currentTheme); applyTheme(); });
+$('#langSelect')?.addEventListener('change', e=>{ currentLang=normalizeLang(e.target.value); localStorage.setItem(STORAGE.lang,currentLang); applyI18n(); route(); });
+$('#crtToggle')?.addEventListener('click',()=>{ crtOn=!crtOn; localStorage.setItem(STORAGE.crt,crtOn?'on':'off'); applyTheme(); });
+$('#profileBtn')?.addEventListener('click', toggleProfileMenu);
+$('#profileMenu')?.addEventListener('click', e=>{ const a=e.target.closest('[data-profile-action]')?.dataset.profileAction; if(!a) return; closeProfileMenu(); if(a==='login') openAuthModal('login'); if(a==='profile') location.hash='#profile'; if(a==='notifications') location.hash='#notifications'; if(a==='favorites') location.hash='#favorites'; if(a==='mods') location.hash='#my-mods'; if(a==='settings') location.hash='#profile-settings'; if(a==='admin') location.hash='#admin'; if(a==='logout'){ getFirebaseAuth()?.signOut?.(); saveUser(null); location.hash='#home'; }});
+$('#authClose')?.addEventListener('click', closeAuthModal);
+$('#authModal')?.addEventListener('click',e=>{ if(e.target.id==='authModal') closeAuthModal(); });
+$$('.auth-tab').forEach(btn=>btn.addEventListener('click',()=>setAuthMode(btn.dataset.mode)));
+$('#authForm')?.addEventListener('submit', async e=>{
+  e.preventDefault(); if(!validateAuthForm()) return; const email=$('#authEmail').value.trim(), pass=$('#authPassword').value, name=authMode==='register'?$('#authName').value.trim():email.split('@')[0]; const auth=getFirebaseAuth(); $('#authSubmit').disabled=true;
   try{
     if(auth){
-      if(authMode === 'register'){
-        const cred = await auth.createUserWithEmailAndPassword(email, pass);
-        if(name && cred.user.updateProfile) await cred.user.updateProfile({displayName:name});
-        await sendVerification(cred.user);
-        pendingVerificationUser = cred.user;
-        showAuthStatus(t('emailVerificationSent'), 'ok');
-        setVerifyActionsVisible(true);
-        return;
-      }
-      const cred = await auth.signInWithEmailAndPassword(email, pass);
-      await cred.user.reload();
-      if(!cred.user.emailVerified){
-        pendingVerificationUser = cred.user;
-        showAuthStatus(t('verifyEmailBeforeLogin'), 'warn');
-        setVerifyActionsVisible(true);
-        return;
-      }
-      saveUser({name:cred.user.displayName || name, email:cred.user.email, avatar:cred.user.photoURL || null, uid:cred.user.uid, emailVerified:true, firebase:true});
-      pullProfileFromCloud(cred.user.uid).then(p=>{ if(p) updateProfileButton(); });
-      closeAuthModal();
-      location.hash = '#profile';
-      return;
+      if(authMode==='register'){ const cred=await auth.createUserWithEmailAndPassword(email,pass); if(name&&cred.user.updateProfile) await cred.user.updateProfile({displayName:name}); await sendVerification(cred.user); pendingVerificationUser=cred.user; showAuthStatus(t('emailVerificationSent'),'ok'); setVerifyActionsVisible(true); return; }
+      const cred=await auth.signInWithEmailAndPassword(email,pass); await cred.user.reload(); if(!cred.user.emailVerified){ pendingVerificationUser=cred.user; showAuthStatus(t('verifyEmailBeforeLogin'),'warn'); setVerifyActionsVisible(true); return; }
+      saveUser(firebaseUserToLocalUser(cred.user)); ensureUser(currentUser); closeAuthModal(); location.hash='#profile'; return;
     }
-    showAuthStatus(t('firebaseConfigMissing'), 'error');
-  }catch(err){
-    showAuthStatus(authErrorMessage(err), 'error');
-  }finally{
-    $('#authSubmit').disabled = false;
-  }
+    showAuthStatus(t('firebaseConfigMissing'),'warn'); const local=makeLocalUser(email,name); saveUser(local); closeAuthModal(); location.hash='#profile';
+  }catch(err){ showAuthStatus(authErrorMessage(err),'error'); }
+  finally{ $('#authSubmit').disabled=false; }
 });
+$('#googleAuthBtn')?.addEventListener('click', async()=>{ try{ const cred=await window.PoluxAuthService?.signInWithGoogle?.(currentLang); if(cred?.user){ saveUser(firebaseUserToLocalUser(cred.user)); ensureUser(currentUser); closeAuthModal(); location.hash='#profile'; }}catch(err){ showAuthStatus(authErrorMessage(err),'error'); }});
+$('#forgotPasswordBtn')?.addEventListener('click',()=>{ closeAuthModal(); $('#resetModal')?.classList.add('open'); });
+$('#resetClose')?.addEventListener('click',()=>$('#resetModal')?.classList.remove('open'));
+$('#resetModal')?.addEventListener('click',e=>{ if(e.target.id==='resetModal') $('#resetModal')?.classList.remove('open'); });
+$('#resetRequestForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const email=$('#resetEmail').value.trim(); const auth=getFirebaseAuth(); if(auth){ try{await auth.sendPasswordResetEmail(email,{url:location.origin+location.pathname}); $('#resetStatus').textContent=t('resetEmailSent'); $('#resetStatus').className='auth-status show ok';}catch(err){$('#resetStatus').textContent=authErrorMessage(err); $('#resetStatus').className='auth-status show error';} } else { $('#resetStatus').textContent=t('firebaseConfigMissing'); $('#resetStatus').className='auth-status show warn'; }});
+$('#resendVerificationBtn')?.addEventListener('click', async()=>{ try{ await sendVerification(pendingVerificationUser || getFirebaseAuth()?.currentUser); showAuthStatus(t('emailVerificationSent'),'ok'); }catch(err){ showAuthStatus(authErrorMessage(err),'error'); }});
+$('#checkVerificationBtn')?.addEventListener('click', async()=>{ const user=pendingVerificationUser || getFirebaseAuth()?.currentUser; if(!user) return; await user.reload(); if(user.emailVerified){ saveUser(firebaseUserToLocalUser(user)); ensureUser(currentUser); closeAuthModal(); location.hash='#profile'; } else showAuthStatus(t('verifyEmailBeforeLogin'),'warn'); });
+$$('[data-toggle-password]').forEach(btn=>btn.addEventListener('click',()=>{ const input=$('#'+btn.dataset.togglePassword); if(!input) return; const show=input.type==='password'; input.type=show?'text':'password'; btn.title=t(show?'hidePassword':'showPassword'); }));
+window.addEventListener('hashchange', route); window.addEventListener('resize',()=>{ positionProfileMenu(); $$('.custom-select.open').forEach(positionCustomSelectMenu); }); window.addEventListener('scroll',()=>{ positionProfileMenu(); $$('.custom-select.open').forEach(positionCustomSelectMenu); }, true); window.visualViewport?.addEventListener('resize',()=>{ updateViewportHeight(); liftFocusedField(); }); window.visualViewport?.addEventListener('scroll', liftFocusedField);
 
-$('#resendVerificationBtn')?.addEventListener('click', async () => {
-  const auth = getFirebaseAuth();
-  const user = pendingVerificationUser || auth?.currentUser;
-  if(!auth || !user){ showAuthStatus(t('firebaseConfigMissing'), 'warn'); return; }
-  try{ await sendVerification(user); showAuthStatus(t('verificationResent'), 'ok'); }
-  catch(err){ showAuthStatus(authErrorMessage(err), 'error'); }
-});
-$('#checkVerificationBtn')?.addEventListener('click', async () => {
-  const auth = getFirebaseAuth();
-  const user = pendingVerificationUser || auth?.currentUser;
-  if(!auth || !user){ showAuthStatus(t('firebaseConfigMissing'), 'warn'); return; }
-  try{
-    await user.reload();
-    if(user.emailVerified){
-      saveUser({name:user.displayName || user.email.split('@')[0], email:user.email, avatar:user.photoURL || null, uid:user.uid, emailVerified:true, firebase:true});
-      showAuthStatus(t('verificationSuccess'), 'ok');
-      closeAuthModal();
-      location.hash = '#profile';
-    } else {
-      showAuthStatus(t('verificationStillPending'), 'warn');
-    }
-  }catch(err){ showAuthStatus(authErrorMessage(err), 'error'); }
-});
-
-document.addEventListener('input', e => { if(e.target.closest('#authForm')) validateAuthForm(); });
-document.addEventListener('click', e => {
-  const eye = e.target.closest('[data-toggle-password]');
-  if(!eye) return;
-  const input = $('#' + eye.dataset.togglePassword);
-  if(!input) return;
-  const show = input.type === 'password';
-  input.type = show ? 'text' : 'password';
-  eye.classList.toggle('active', show);
-  const label = t(show ? 'hidePassword' : 'showPassword');
-  eye.title = label;
-  eye.setAttribute('aria-label', label);
-});
-
-document.addEventListener('click', e => {
-  if(!e.target.closest('.custom-select') && !e.target.closest('.custom-select-menu')) closeCustomSelects();
-  if(!e.target.closest('#profileWrap')) closeProfileMenu();
-  if(!e.target.closest('.admin-user-menu-wrap')) $$('.admin-user-row.menu-open').forEach(r=>r.classList.remove('menu-open'));
-  const link = e.target.closest('[data-link]');
-  if(link && link.getAttribute('href')?.startsWith('#')) e.preventDefault(), location.hash = link.getAttribute('href');
-});
-
-
-function updateViewportHeight(){
-  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
+function syncFirebaseAuth(){
+  const auth=getFirebaseAuth();
+  try{ auth?.onAuthStateChanged?.(user=>{ if(user){ saveUser(firebaseUserToLocalUser(user)); ensureUser(currentUser); } }); }catch(_){}
 }
-function liftFocusedField(){
-  const el = document.activeElement;
-  if(!el || !el.matches('input, textarea, select')) return;
-  setTimeout(() => el.scrollIntoView({block:'center', inline:'nearest', behavior:'smooth'}), 160);
-}
-updateViewportHeight();
-window.visualViewport?.addEventListener('resize', () => { updateViewportHeight(); liftFocusedField(); });
-window.visualViewport?.addEventListener('scroll', liftFocusedField);
-document.addEventListener('focusin', e => { if(e.target.matches('input, textarea')) liftFocusedField(); });
-
-enhanceCustomSelects(document);
-applyTheme();
-applyI18n();
-route();
-
-function renderProfileSettingsPage(){
-  if(!currentUser){ openAuthModal('login'); location.hash='#home'; return; }
-  const p = ensureCurrentProfile();
-  $('#app').innerHTML = `
-    <section class="page-panel narrow reveal profile-settings-page">
-      <p class="eyebrow">/profile/settings</p>
-      <h1>${t('profileSettingsTitle')}</h1>
-      <div class="profile-editor-card">
-        <button class="profile-cover editable-cover" id="coverPickerBtn" type="button" title="${t(p.cover?'replaceCover':'addCover')}">${p.cover ? `<img src="${p.cover}" alt="">` : defaultCover()}<span class="edit-dot">✎</span></button>
-        <button class="profile-big-avatar editable-avatar" id="avatarPickerBtn" type="button" title="${t(p.avatar?'replaceAvatar':'addAvatar')}">${profileAvatarHtml(p)}<span class="edit-dot">✎</span></button>
-        <div class="settings-block">
-          <label>${t('accountName')}</label>
-          <div class="inline-edit"><strong data-no-translate>${p.name}</strong><button class="icon-btn" id="editNameBtn" type="button">✎</button></div>
-          <small>${t('nameLimitHint')}</small>
-        </div>
-        <div class="settings-block">
-          <label>${t('accountBio')}</label>
-          <p class="settings-muted">${p.bio ? translateText(p.bio,currentLang) : t('noBio')}</p>
-          <div class="hero-actions"><button class="btn" id="editBioBtn" type="button">${p.bio?t('editBio'):t('addBio')}</button>${p.bio?`<button class="btn danger-soft" id="removeBioBtn" type="button">${t('removeBio')}</button>`:''}</div>
-          <small>${t('bioLimit')}</small>
-        </div>
-        <div class="settings-block"><label>${t('changePassword')}</label><p class="settings-muted">${t('passwordChangeHint')}</p><button class="btn" id="changePasswordBtn" type="button">${t('changePassword')}</button></div>
-        <div class="settings-block"><label>${t('activeSessions')}</label><p class="settings-muted">${t('sessionsHint')}</p><button class="btn" id="sessionsBtn" type="button">${t('activeSessions')}</button></div>
-        <div class="settings-block danger-zone"><label>${t('deleteAccount')}</label><p class="settings-muted">${t('deleteAccountText')}</p><button class="btn danger-soft" id="deleteAccountBtn" type="button">${t('deleteAccount')}</button></div>
-      </div>
-    </section>`;
-  $('#avatarPickerBtn').addEventListener('click', () => openImageChoice('avatar', p));
-  $('#coverPickerBtn').addEventListener('click', () => openImageChoice('cover', p));
-  $('#editNameBtn').addEventListener('click', () => openNameModal(p));
-  $('#editBioBtn').addEventListener('click', () => openBioModal(p));
-  $('#removeBioBtn')?.addEventListener('click', () => { p.bio=''; writeProfile(p); renderProfileSettingsPage(); });
-  $('#changePasswordBtn').addEventListener('click', () => openChangePasswordModal());
-  $('#sessionsBtn').addEventListener('click', () => openSessionsModal(p));
-  $('#deleteAccountBtn').addEventListener('click', () => openDeleteAccountModal(p));
-  applyI18n();
-}
-
-function findLocalProfileByQuery(query){
-  const q = String(query || '').trim().toLowerCase();
-  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  const found = Object.values(index).find(u =>
-    String(u.uid || '').toLowerCase() === q ||
-    String(u.publicId || '').toLowerCase() === q ||
-    String(u.email || '').toLowerCase() === q ||
-    String(u.name || '').toLowerCase().includes(q)
-  );
-  return found ? readProfile(found.uid) : null;
-}
-function roleOptions(selected='roleUser'){
-  const roles = ['roleAdministrator','roleModerator','roleUser'];
-  return roles.map(r => `<option value="${r}" ${r===selected?'selected':''}>${t(r)}</option>`).join('');
-}
-function adminActionOptions(){
-  return `<option value="ban">${t('adminActionBan')}</option><option value="mute">${t('adminActionMute')}</option><option value="unban">${t('adminActionUnban')}</option><option value="unmute">${t('adminActionUnmute')}</option><option value="delete">${t('adminActionDelete')}</option><option value="role">${t('adminActionRole')}</option>`;
-}
-function renderAdminUsersList(filter=''){
-  const q = String(filter || '').trim().toLowerCase();
-  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  const users = Object.values(index).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).filter(u => !q || `${u.name||''} ${u.email||''} ${u.uid||''} ${u.publicId||''}`.toLowerCase().includes(q)).slice(0,80);
-  return users.length ? users.map(u => `
-    <div class="admin-user-row" data-admin-user-row="${u.uid}">
-      <a class="admin-user-avatar" href="#user/${u.uid}">${u.avatar?`<img src="${u.avatar}" alt="">`:defaultAvatarSvg()}</a>
-      <div><strong data-no-translate>${escapeHtml(u.name || u.email || u.uid)}</strong><small>${u.publicId || publicUserId(u.uid)} · ${(u.roles||[]).map(r=>t(r)).join(' · ') || t('roleUser')} · ${t('userRating')}: ${u.rating || 0}</small></div>
-      <div class="admin-user-menu-wrap"><button class="icon-btn admin-dots" type="button" data-admin-dots="${u.uid}" aria-label="${t('adminMenu')}">⋯</button><div class="admin-user-menu"><button type="button" data-admin-load-user="${u.uid}">${t('moderateUser')}</button><a href="#user/${u.uid}">${t('openUserProfile')}</a></div></div>
-    </div>`).join('') : `<p>${t('adminNoUsers')}</p>`;
-}
-async function applyModerationAction(target, action, reason, role, moderator){
-  if(action === 'ban') target.bannedUntil = 'permanent';
-  if(action === 'mute') target.mutedUntil = 'permanent';
-  if(action === 'unban') target.bannedUntil = null;
-  if(action === 'unmute') target.mutedUntil = null;
-  if(action === 'delete') target.deletedAt = new Date().toISOString();
-  if(action === 'role'){
-    const rating = ratingRoleKeys(target.rating);
-    target.roles = [...new Set([role, ...rating, ...(target.emailVerified?['titleVerified']:[])])];
-  }
-  writeProfile(target);
-  const payload = {action, reason, targetUid:target.uid, targetEmail:target.email || '', moderatorUid:moderator.uid, moderatorEmail:moderator.email || '', role};
-  await window.PoluxDbService?.updateUserProfile?.(target.uid, target);
-  await window.PoluxDbService?.saveAdminAction?.(payload);
-  return payload;
-}
-function renderAdminPanelPage(){
-  if(!currentUser){ openAuthModal('login'); location.hash = '#home'; return; }
-  const me = ensureCurrentProfile();
-  if(!isAdminProfile(me)){
-    $('#app').innerHTML = `<section class="page-head page-panel"><p class="eyebrow">/admin</p><h1>${t('adminPanelTitle')}</h1><p>${t('adminOnly')}</p></section>`;
-    return;
-  }
-  $('#app').innerHTML = `
-    <section class="page-head page-panel admin-page">
-      <p class="eyebrow">/admin</p>
-      <h1>${t('adminPanelTitle')}</h1>
-      <p>${t('adminPanelText')}</p>
-    </section>
-    <section class="admin-grid reveal">
-      <article class="admin-card">
-        <h3>${t('userModeration')}</h3>
-        <form class="auth-form" id="adminUserForm">
-          <label class="field"><span>${t('targetUser')}</span><input id="adminUserQuery" class="site-input" placeholder="${t('userSearchPlaceholder')}"></label>
-          <label class="field"><span>${t('adminAction')}</span><select id="adminActionSelect">
-${adminActionOptions()}
-          </select></label>
-          <label class="field" id="adminRoleWrap"><span>${t('adminRole')}</span><select id="adminRoleSelect">${roleOptions()}</select></label>
-          <label class="field"><span>${t('moderationReason')}</span><textarea id="adminReason" class="site-input" maxlength="300"></textarea></label>
-          <button class="btn primary" type="submit">${t('save')}</button>
-          <div class="auth-status" id="adminStatus" aria-live="polite"></div>
-        </form>
-      </article>
-      <article class="admin-card">
-        <h3>${t('ratingRoles')}</h3>
-        <div class="role-ladder">
-          <span>${t('roleRookie')} · 0+</span>
-          <span>${t('roleMechanic')} · 30+</span>
-          <span>${t('roleDriver')} · 100+</span>
-          <span>${t('roleFarmer')} · 250+</span>
-          <span>${t('roleMaster')} · 500+</span>
-          <span>${t('roleLegend')} · 1000+</span>
-        </div>
-      </article>
-      <article class="admin-card">
-        <h3>${t('complaints')}</h3>
-        <p>${t('complaintsHint')}</p>
-        <div class="admin-mini-list">${renderReportsPreview()}</div>
-      </article>
-      <article class="admin-card">
-        <h3>${t('siteControls')}</h3>
-        <label class="switch-row"><input type="checkbox" id="maintenanceToggle"> <span>${t('siteMaintenance')}</span></label>
-        <label class="switch-row"><input type="checkbox" id="holidayToggle"> <span>${t('siteHolidayTheme')}</span></label>
-        <p>${t('publishModsSoon')}</p>
-      </article>
-      <article class="admin-card admin-card-wide">
-        <h3>${t('adminUsersList')}</h3>
-        <label class="field admin-search-field"><span>${t('adminUserSearch')}</span><input id="adminUsersSearch" class="site-input" type="search" placeholder="${t('adminUserSearch')}"></label>
-        <div class="admin-users-list" id="adminUsersList">${renderAdminUsersList()}</div>
-      </article>
-    </section>`;
-  enhanceCustomSelects($('#app'));
-  $('#adminActionSelect').addEventListener('change', () => $('#adminRoleWrap').classList.toggle('hidden', $('#adminActionSelect').value !== 'role'));
-  $('#adminActionSelect').dispatchEvent(new Event('change'));
-  const adminUserFromHash = new URLSearchParams((location.hash.split('?')[1] || '')).get('user');
-  if(adminUserFromHash) $('#adminUserQuery').value = adminUserFromHash;
-  function bindAdminUserList(){
-    $$('[data-admin-dots]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); const row = btn.closest('.admin-user-row'); $$('.admin-user-row.menu-open').forEach(r=>{if(r!==row) r.classList.remove('menu-open')}); row.classList.toggle('menu-open'); }));
-    $$('[data-admin-load-user]').forEach(btn => btn.addEventListener('click', () => { $('#adminUserQuery').value = btn.dataset.adminLoadUser; window.scrollTo({top:0,behavior:'smooth'}); $$('.admin-user-row.menu-open').forEach(r=>r.classList.remove('menu-open')); }));
-  }
-  bindAdminUserList();
-  $('#adminUsersSearch')?.addEventListener('input', e => { $('#adminUsersList').innerHTML = renderAdminUsersList(e.target.value); bindAdminUserList(); });
-  syncUsersIndexFromCloud().then(list => { if(list.length && $('#adminUsersList')){ $('#adminUsersList').innerHTML = renderAdminUsersList($('#adminUsersSearch')?.value || ''); bindAdminUserList(); } });
-  $('#maintenanceToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({maintenance:e.target.checked}));
-  $('#holidayToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({holidayTheme:e.target.checked}));
-  $('#adminUserForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const status = $('#adminStatus');
-    const target = findLocalProfileByQuery($('#adminUserQuery').value) || readProfile($('#adminUserQuery').value);
-    const action = $('#adminActionSelect').value;
-    const reason = $('#adminReason').value.trim();
-    if(!target?.uid){ status.textContent = t('fieldRequired'); status.className='auth-status show error'; return; }
-    let cloudOk = false;
-    try{ await applyModerationAction(target, action, reason, $('#adminRoleSelect').value, me); cloudOk = true; }
-    catch(_){ writeProfile(target); }
-    $('#adminUsersList') && ($('#adminUsersList').innerHTML = renderAdminUsersList($('#adminUsersSearch')?.value || ''));
-    status.textContent = cloudOk ? t('roleSavedToDb') : t('moderationLocalSaved');
-    status.className = 'auth-status show ok';
-  });
-}
-function renderReportsPreview(){
-  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  const rows = [];
-  Object.values(index).forEach(u => {
-    const p = readProfile(u.uid);
-    (p.reports || []).slice(-3).forEach(r => rows.push(`<div class="admin-report-row"><strong data-no-translate>${p.name}</strong><small>${r.reason || ''} · ${formatDateShort(r.createdAt)}</small></div>`));
-  });
-  return rows.length ? rows.slice(-8).join('') : `<p>${t('complaintsHint')}</p>`;
-}
-
-function renderMyModsPage(){
-  if(!currentUser){ openAuthModal('login'); location.hash='#home'; return; }
-  const p = ensureCurrentProfile();
-  const list = modsSource.filter(m => (m.author || '').toLowerCase() === (p.name || '').toLowerCase() || (m.author || '').toLowerCase()==='polux mods');
-  $('#app').innerHTML = `<section class="page-head page-panel"><p class="eyebrow">/my-mods</p><h1>${t('myModsTitle')}</h1><p>${t('filteredByAuthor')} <strong data-no-translate>${p.name}</strong></p></section><section class="mods-grid reveal">${list.length?list.map(m=>{const x=translateRecord(m,currentLang);return `<article class="mod-card"><span class="tag">${x.category}</span><div class="pixel-art">${x.icon}</div><h3>${x.title}</h3><p>${x.desc}</p><footer><span class="status">${x.status}</span><a class="btn" href="#mods/${x.id}" data-link>${t('open')}</a></footer></article>`}).join(''):`<div class="page-panel narrow"><p>${t('noUserMods')}</p></div>`}</section>`;
-}
-function modalShell(id, title, body){
-  let m = $('#'+id); if(m) m.remove();
-  document.body.insertAdjacentHTML('beforeend', `<div class="auth-modal open profile-modal" id="${id}" aria-hidden="false"><div class="auth-card" role="dialog"><button class="auth-close" type="button" data-close-modal="${id}">×</button><p class="eyebrow">/profile</p><h2>${title}</h2>${body}</div></div>`);
-  $('#'+id).addEventListener('click', e => { if(e.target.id===id || e.target.closest('[data-close-modal]')) $('#'+id).remove(); });
-  return $('#'+id);
-}
-function openImageChoice(kind, p){
-  const has = !!p[kind];
-  const title = kind==='avatar' ? (has?t('replaceAvatar'):t('addAvatar')) : (has?t('replaceCover'):t('addCover'));
-  const m = modalShell('imageChoiceModal', title, `<div class="auth-form"><button class="btn" id="imgFileBtn">${t('chooseFromFile')}</button><button class="btn" id="imgUrlBtn">${t('chooseFromUrl')}</button>${has?`<button class="btn danger-soft" id="imgRemoveBtn">${kind==='avatar'?t('removeAvatar'):t('removeCover')}</button>`:''}</div><input class="hidden" id="profileImageFile" type="file" accept="image/*">`);
-  $('#imgFileBtn').onclick=()=>$('#profileImageFile').click();
-  $('#profileImageFile').onchange=async e=>{ const file=e.target.files?.[0]; if(!file) return; try{ p[kind]=await compressImageToDataUrl(file, kind); writeProfile(p); m.remove(); renderProfileSettingsPage(); }catch(_){ const r=new FileReader(); r.onload=()=>{p[kind]=r.result; writeProfile(p); m.remove(); renderProfileSettingsPage();}; r.readAsDataURL(file); } };
-  $('#imgUrlBtn').onclick=()=>{ const url=prompt(t('imageUrl')); if(url){p[kind]=url.trim(); writeProfile(p); m.remove(); renderProfileSettingsPage();} };
-  $('#imgRemoveBtn') && ($('#imgRemoveBtn').onclick=()=>{p[kind]=''; writeProfile(p); m.remove(); renderProfileSettingsPage();});
-}
-function nameChangeWindow(p){ const monthAgo=Date.now()-30*86400000; return (p.nameChanges||[]).filter(d=>new Date(d).getTime()>monthAgo); }
-function openNameModal(p){
-  const changes = nameChangeWindow(p);
-  const nextDate = changes.length>=2 ? new Date(new Date(changes[0]).getTime()+30*86400000) : null;
-  const body = `<form class="auth-form" id="nameForm"><p class="auth-hint">${t('nameLimitHint')}</p>${nextDate?`<div class="auth-status show warn">${t('nameLimitReached')} ${t('nameAvailableAt')} ${formatDateShort(nextDate)}</div>`:''}<label class="field"><span>${t('accountName')}</span><input id="newProfileName" maxlength="32" value="${p.name.replace(/"/g,'&quot;')}"><small class="field-error" id="nameChangeError"></small></label><button class="btn primary" ${nextDate?'disabled':''}>${t('save')}</button></form>`;
-  modalShell('nameModal', t('editName'), body);
-  $('#nameForm').onsubmit=async e=>{e.preventDefault(); const v=$('#newProfileName').value.trim(); if(!v){$('#nameChangeError').textContent=t('fieldRequired');return;} if(v.length>32){$('#nameChangeError').textContent=t('nameTooLong');return;} p.name=v; p.nameChanges=[...changes,new Date().toISOString()]; writeProfile(p); try{ await getFirebaseAuth()?.currentUser?.updateProfile?.({displayName:v}); }catch(_){} $('#nameModal').remove(); renderProfileSettingsPage();};
-}
-function openBioModal(p){
-  modalShell('bioModal', p.bio?t('editBio'):t('addBio'), `<form class="auth-form" id="bioForm"><label class="field"><span>${t('accountBio')}</span><textarea id="bioText" maxlength="70">${p.bio||''}</textarea><small class="field-error" id="bioError"></small></label><button class="btn primary">${t('save')}</button></form>`);
-  $('#bioForm').onsubmit=e=>{e.preventDefault(); const v=$('#bioText').value.trim(); if(v.length>70){$('#bioError').textContent=t('bioTooLong');return;} p.bio=v; writeProfile(p); $('#bioModal').remove(); renderProfileSettingsPage();};
-}
-function openChangePasswordModal(){
-  modalShell('changePasswordModal', t('changePassword'), `<form class="auth-form" id="changePasswordForm"><p class="auth-hint">${t('passwordChangeHint')}</p><label class="field"><span>${t('newPassword')}</span><div class="password-box"><input id="profileNewPassword" type="password"><button class="password-eye" type="button" data-toggle-password="profileNewPassword">◉</button></div><small class="field-error" id="profileNewPasswordError"></small></label><label class="field"><span>${t('confirmNewPassword')}</span><div class="password-box"><input id="profileNewPasswordConfirm" type="password"><button class="password-eye" type="button" data-toggle-password="profileNewPasswordConfirm">◉</button></div><small class="field-error" id="profileNewPasswordConfirmError"></small></label><button class="btn primary">${t('resetPasswordButton')}</button></form>`);
-  $('#changePasswordForm').onsubmit=async e=>{e.preventDefault(); const a=$('#profileNewPassword').value,b=$('#profileNewPasswordConfirm').value; if(a.length<6){$('#profileNewPasswordError').textContent=t('passwordTooShort');return;} if(a!==b){$('#profileNewPasswordConfirmError').textContent=t('passwordsDontMatch');return;} try{ await getFirebaseAuth()?.currentUser?.updatePassword(a); alert(t('passwordChangedLogout')); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#changePasswordModal').remove(); }catch(err){ alert(authErrorMessage(err)); }};
-}
-function openSessionsModal(p){
-  touchSession(); p=readProfile();
-  const rows=(p.sessions||[]).map(s=>`<div class="session-row"><div><strong>${s.current?t('currentSession'):s.browser}</strong><small>${s.browser} · ${s.platform} · ${formatDateShort(s.lastSeen)}<br>${s.userAgent}</small></div><button class="icon-btn" data-kill-session="${s.id}">×</button></div>`).join('');
-  modalShell('sessionsModal', t('activeSessions'), `<div class="auth-form"><p class="auth-hint">${t('sessionsHint')}</p>${rows}<button class="btn danger-soft" id="killAllSessions">${t('closeAllSessions')}</button></div>`);
-  $$('[data-kill-session]').forEach(b=>b.onclick=()=>{ if(confirm(t('confirmCloseSession'))){ const p=readProfile(); p.sessions=(p.sessions||[]).filter(s=>s.id!==b.dataset.killSession); writeProfile(p); if(b.dataset.killSession===sessionId()){getFirebaseAuth()?.signOut?.(); saveUser(null);} $('#sessionsModal').remove(); }});
-  $('#killAllSessions').onclick=()=>{ if(confirm(t('confirmCloseAll'))){ p.sessions=[]; writeProfile(p); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#sessionsModal').remove(); }};
-}
-function openDeleteAccountModal(p){
-  modalShell('deleteAccountModal', t('deleteAccountTitle'), `<form class="auth-form" id="deleteAccountForm"><p class="auth-hint">${t('deleteAccountText')}</p><label class="field"><span>${t('password')}</span><div class="password-box"><input id="deletePassword" type="password"><button class="password-eye" type="button" data-toggle-password="deletePassword">◉</button></div><small class="field-error" id="deletePasswordError"></small></label><button class="btn danger-soft">${t('deleteAccount')}</button></form>`);
-  $('#deleteAccountForm').onsubmit=async e=>{e.preventDefault(); if(!$('#deletePassword').value){$('#deletePasswordError').textContent=t('fieldRequired');return;} p.deletedAt=new Date().toISOString(); writeProfile(p); alert(t('accountDeleted')); getFirebaseAuth()?.signOut?.(); saveUser(null); $('#deleteAccountModal').remove(); location.hash='#home';};
-}
-function openCommentsModal(p){
-  const items=(p.comments||[]).length ? p.comments.map(c=>`<a class="session-row" href="${c.url||'#mods'}"><span>${translateText(c.text||'',currentLang)}</span><small>${formatDateShort(c.createdAt)}</small></a>`).join('') : `<p>${t('noComments')}</p>`;
-  modalShell('commentsModal', `${t('comments')} · ${(p.comments||[]).length}`, `<div class="auth-form">${items}</div>`);
-}
-function openReportModal(p){
-  modalShell('reportModal', t('reportUser'), `<form class="auth-form" id="reportForm"><label class="field"><span>${t('reportReason')}</span><select id="reportReason"><option>${t('reportSpam')}</option><option>${t('reportInsult')}</option><option>${t('reportFake')}</option><option>${t('reportRules')}</option><option value="other">${t('reportOther')}</option></select></label><label class="field hidden" id="reportOtherWrap"><span>${t('reportDetails')}</span><textarea id="reportDetails"></textarea></label><button class="btn primary">${t('sendMessage')}</button></form>`);
-  $('#reportReason').onchange=()=>$('#reportOtherWrap').classList.toggle('hidden',$('#reportReason').value!=='other');
-  $('#reportForm').onsubmit=e=>{e.preventDefault(); const report={from:currentUser.uid, targetUid:p.uid, reason:$('#reportReason').value, details:$('#reportDetails')?.value||'', createdAt:new Date().toISOString()}; p.reports.push(report); writeProfile(p); window.PoluxDbService?.saveUserReport?.(report); alert(t('reportSent')); $('#reportModal').remove();};
-}
-function sendThanks(p){
-  if(!currentUser || p.uid===currentUser.uid){alert(t('cantThankSelf'));return;}
-  const month = new Date().toISOString().slice(0,7); const key=currentUser.uid+'_'+month; const sent=JSON.parse(localStorage.getItem('polux.thanks.sent')||'{}');
-  if(sent[p.uid] || Object.keys(sent).filter(k=>k.endsWith('_'+month)).length>=3){alert(t('thanksLimit'));return;}
-  if(confirm(t('thanksConfirm'))){ sent[p.uid]=true; sent[key]=true; localStorage.setItem('polux.thanks.sent',JSON.stringify(sent)); p.rating+=10; writeProfile(p); alert(t('thanksSent')); renderProfile(p.uid); }
-}
-
-
-/* === Polux Mods release refactor: dynamic pages, admin blocks, tickets, favorites, notifications, comments === */
-const POLUX_DB_KEYS = {
-  settings:'polux.site.settings', news:'polux.news', reports:'polux.reports', suggestions:'polux.suggestedMods', roles:'polux.roles', favorites:'polux.favorites', notifications:'polux.notifications', comments:'polux.comments', votes:'polux.votes'
-};
-function plxRead(key, fallback){ try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch(_){return fallback;} }
-function plxWrite(key, value){ localStorage.setItem(key, JSON.stringify(value)); return value; }
-function esc(v){ return String(v??'').replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function nowIso(){ return new Date().toISOString(); }
-function formatDate(v){ try{return new Date(v).toLocaleDateString(currentLang||'uk',{year:'numeric',month:'short',day:'2-digit'});}catch(_){return v||'';} }
-function highestRole(user){ const roles=user?.roles||['roleUser']; return roles.includes('roleAdministrator')?'Адміністратор':roles.includes('roleModerator')?'Модератор':roles.includes('titleAuthor')?'Автор модів':'Користувач'; }
-function getSiteSettings(){ return plxRead(POLUX_DB_KEYS.settings,{seasonal:false,maintenance:false,bannerEnabled:false,bannerText:'',bannerUrl:'',homeIntro:'Polux Mods — офіційний гараж модів для Farming Simulator Mobile 20.', roles:[{id:'roleAdministrator',name:'Адміністратор',color:'#ffcf33',rights:['all']},{id:'roleModerator',name:'Модератор',color:'#66d9ff',rights:['moderate_users','moderate_reports','moderate_mods']},{id:'roleUser',name:'Користувач',color:'#9aa0a6',rights:['comment','rate','favorite']} ]}); }
-function saveSiteSettings(v){ plxWrite(POLUX_DB_KEYS.settings,v); window.PoluxDbService?.updateSiteSettings?.(v); }
-function getNews(){ return plxRead(POLUX_DB_KEYS.news,[{id:'release-plan',title:'Polux Mods готується до релізу',desc:'Сайт переходить на динамічні сторінки, адмін-панель, модерацію та систему сповіщень.',author:'Polux Mods',createdAt:'2026-06-23T09:00:00.000Z',blocks:[{type:'text',text:'Ми прибрали демо-подачу й підготували структуру під повноцінний реліз каталогу модів.'}]}]); }
-function saveNews(v){ plxWrite(POLUX_DB_KEYS.news,v); }
-function enrichedMods(){ return modsSource.map((m,i)=>({...m,createdAt:m.createdAt||new Date(Date.now()-i*86400000).toISOString(),rating:m.rating??(5-i*.35),downloads:m.downloads??(200-i*25),images:m.images||[m.icon,m.icon+' '+m.icon],shortDesc:m.desc,fullDesc:m.fullDesc||m.desc,creator:m.creator||m.author||'Polux Mods',compatible:m.compatible||['FS Mobile 20']})); }
-function getFavorites(){ return plxRead(POLUX_DB_KEYS.favorites,{}); }
-function isFav(id){ return !!getFavorites()[currentUser?.uid||'guest']?.includes(id); }
-function toggleFavorite(id){ if(!currentUser){openAuthModal('login');return;} const all=getFavorites(), uid=currentUser.uid||currentUser.email; const set=new Set(all[uid]||[]); set.has(id)?set.delete(id):set.add(id); all[uid]=[...set]; plxWrite(POLUX_DB_KEYS.favorites,all); route(); }
-function getNotifications(){ const all=plxRead(POLUX_DB_KEYS.notifications,{}); return all[currentUser?.uid||'guest']||[]; }
-function pushNotification(uid,text,url='#notifications'){ if(!uid)return; const all=plxRead(POLUX_DB_KEYS.notifications,{}); all[uid]=[{id:'n'+Date.now(),text,url,read:false,createdAt:nowIso()},...(all[uid]||[])]; plxWrite(POLUX_DB_KEYS.notifications,all); }
-function getComments(modId){ return plxRead(POLUX_DB_KEYS.comments,{})[modId]||[]; }
-function saveComments(modId, list){ const all=plxRead(POLUX_DB_KEYS.comments,{}); all[modId]=list; plxWrite(POLUX_DB_KEYS.comments,all); }
-function getReports(){ return plxRead(POLUX_DB_KEYS.reports,[]); }
-function saveReports(v){ plxWrite(POLUX_DB_KEYS.reports,v); }
-function ensureBanner(){ const s=getSiteSettings(); let old=$('.site-banner'); old?.remove(); if(s.bannerEnabled&&s.bannerText){ const el=document.createElement(s.bannerUrl?'a':'div'); el.className='site-banner'; el.textContent=s.bannerText; if(s.bannerUrl) el.href=s.bannerUrl; document.body.prepend(el); } document.body.classList.toggle('seasonal',!!s.seasonal); }
-function maintenanceGate(){ const s=getSiteSettings(); const me=currentUser?ensureCurrentProfile?.():null; return s.maintenance && !isAdminProfile?.(me); }
-function sectionHeader(title,link){ return `<div class="section-title"><h2>${title}</h2>${link?`<a class="btn" href="${link}" data-link>${t('viewAll')}</a>`:''}</div>`; }
-function modCard(m){ const fav=isFav(m.id); return `<article class="mod-card release-card"><button class="card-dots" data-card-menu="${m.id}">⋯</button><div class="card-menu"><button data-fav="${m.id}">${fav?t('removeFavorite'):t('addFavorite')}</button><button data-report-mod="${m.id}">${t('complain')}</button></div><div class="mod-preview">${m.images?.[0]||m.icon}</div><h3>${esc(translateText(m.title,currentLang))}</h3><p class="clamp2">${esc(translateText(m.shortDesc||m.desc,currentLang))}</p><div class="card-meta"><span>${formatDate(m.createdAt)}</span><span>${esc(m.author||'Polux Mods')}</span></div><footer><span class="status">★ ${Number(m.rating||0).toFixed(1)}</span><a class="btn" href="#mods/${m.id}" data-link>${t('go')}</a></footer></article>`; }
-function bindCardActions(){ $$('.card-dots').forEach(b=>b.onclick=()=>b.closest('.release-card').classList.toggle('menu-open')); $$('[data-fav]').forEach(b=>b.onclick=()=>toggleFavorite(b.dataset.fav)); $$('[data-report-mod]').forEach(b=>b.onclick=()=>openReportTicket('mod',b.dataset.reportMod)); }
-function renderHomePage(){ ensureBanner(); if(maintenanceGate()){ $('#app').innerHTML=`<section class="page-panel narrow"><h1>${t('maintenance')}</h1><p>${t('maintenanceText')}</p></section>`; return; } const mods=enrichedMods(); const news=getNews(); $('#app').innerHTML=`<section class="hero page-panel"><div class="hero-copy"><p class="eyebrow">Farming Simulator Mobile 20</p><h1>${t('heroTitle')}</h1><p>${esc(getSiteSettings().homeIntro||t('heroText'))}</p><div class="hero-actions"><a class="btn primary" href="#mods" data-link>${t('viewMods')}</a><a class="btn" href="#about" data-link>${t('learnMore')}</a></div></div><div class="pixel-device"><div class="screen"><span class="blink">POLUX/RELEASE</span><div class="tiny-tractor">▁▂▃▅🚜▅▃▂▁</div></div></div></section><section class="dynamic-block reveal">${sectionHeader(t('latestMods'),'#mods?sort=new') }<div class="mods-grid">${mods.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,3).map(modCard).join('')}</div></section><section class="dynamic-block reveal">${sectionHeader(t('popularMods'),'#mods?sort=rating') }<div class="mods-grid">${mods.sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3).map(modCard).join('')}</div></section><section class="dynamic-block reveal">${sectionHeader(t('latestNews'),'#news') }<div class="news-list">${news.slice(0,5).map(n=>`<a class="news-row" href="#news/${n.id}" data-link><strong>${esc(translateText(n.title,currentLang))}</strong><small>${formatDate(n.createdAt)} · ${esc(n.author)}</small><p>${esc(translateText(n.desc,currentLang))}</p></a>`).join('')}</div></section><footer class="site-footer">© ${new Date().getFullYear()} Polux Mods · FS Mobile 20</footer>`; bindCardActions(); }
-function renderModsPage(){ const mods=enrichedMods(); $('#app').innerHTML=`<section class="page-head page-panel"><p class="eyebrow">/mods</p><h1>${t('modsTitle')}</h1><p>${t('modsText')}</p></section><section class="filters reveal"><input id="searchInput" type="search" placeholder="${t('searchPlaceholder')}"><select id="categoryFilter"><option value="all">${t('allCategories')}</option>${[...new Set(mods.map(m=>m.category))].map(c=>`<option>${translateText(c,currentLang)}</option>`).join('')}</select><select id="sortMods"><option value="new">${t('latestMods')}</option><option value="rating">${t('popularMods')}</option></select></section><section class="mods-grid reveal" id="modsGrid"></section>`; const paint=()=>{ const q=$('#searchInput').value.toLowerCase(), cat=$('#categoryFilter').value, sort=$('#sortMods').value; let list=mods.filter(m=>(cat==='all'||translateText(m.category,currentLang)===cat)&&`${m.title} ${m.desc} ${m.author}`.toLowerCase().includes(q)); if(sort==='rating')list.sort((a,b)=>(b.rating||0)-(a.rating||0)); else list.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))); $('#modsGrid').innerHTML=list.map(modCard).join('')||`<p>${t('noItems')}</p>`; bindCardActions(); }; $$('#searchInput,#categoryFilter,#sortMods').forEach(e=>e.addEventListener('input',paint)); paint(); enhanceCustomSelects($('#app')); }
-function renderNewsPage(){ const news=getNews(); $('#app').innerHTML=`<section class="page-head page-panel"><p class="eyebrow">/news</p><h1>${t('latestNews')}</h1><p>Офіційні новини Polux Mods, оновлення сайту та релізи модифікацій.</p></section><section class="news-list reveal">${news.map(n=>`<a class="news-row" href="#news/${n.id}" data-link><strong>${esc(translateText(n.title,currentLang))}</strong><small>${formatDate(n.createdAt)} · ${esc(n.author)}</small><p>${esc(translateText(n.desc,currentLang))}</p></a>`).join('')}</section>`; }
-function renderNewsDetail(id){ const n=getNews().find(x=>x.id===id)||getNews()[0]; $('#app').innerHTML=`<article class="page-panel narrow news-detail"><a class="btn" href="#news" data-link>← ${t('back')}</a><p class="eyebrow">/news · ${formatDate(n.createdAt)}</p><h1>${esc(translateText(n.title,currentLang))}</h1><p>${esc(translateText(n.desc,currentLang))}</p>${(n.blocks||[]).slice(0,10).map(b=>b.type==='image'?`<div class="mod-preview">${esc(b.url||'▧')}</div>`:`<p>${esc(translateText(b.text||'',currentLang))}</p>`).join('')}<hr><h3>${t('comments')}</h3><div id="commentsBox"></div></article>`; renderComments('news-'+n.id); }
-function renderMod(id){ const m=enrichedMods().find(x=>x.id===id)||enrichedMods()[0]; $('#app').innerHTML=`<section class="mod-detail page-panel reveal"><a class="btn" href="#mods" data-link>← ${t('back')}</a><div class="gallery"><button class="main-shot" id="mainShot">${m.images?.[0]||m.icon}</button><div class="thumbs">${(m.images||[m.icon]).map((im,i)=>`<button data-shot="${esc(im)}">${esc(im)}</button>`).join('')}</div></div><p class="eyebrow">${translateText(m.category,currentLang)} / ${m.game}</p><h1>${esc(translateText(m.title,currentLang))}</h1><p>${esc(translateText(m.fullDesc||m.desc,currentLang))}</p><div class="specs"><div><strong>${t('category')}</strong><br>${translateText(m.category,currentLang)}</div><div><strong>${t('modVersion')}</strong><br>${esc(m.version)}</div><div><strong>${t('modCreator')}</strong><br>${esc(m.creator)}</div><div><strong>${t('compatibleVersions')}</strong><br>${(m.compatible||[]).join(', ')}</div><div><strong>${t('author')}</strong><br>${esc(m.author)}</div><div><strong>${t('rating')}</strong><br><span id="ratingBox">${starHtml(m.id,m.rating)}</span></div></div><div class="hero-actions"><button class="btn primary" type="button">${t('download')}</button><button class="btn" data-fav="${m.id}">${isFav(m.id)?t('removeFavorite'):t('addFavorite')}</button><button class="btn" data-report-mod="${m.id}">${t('complain')}</button></div><section class="comments-section"><h2>${t('comments')}</h2><div id="commentsBox"></div></section></section>`; $$('.thumbs button').forEach(b=>b.onclick=()=>$('#mainShot').textContent=b.dataset.shot); $('#mainShot').onclick=()=>modalShell('galleryModal',m.title,`<div class="zoom-shot">${esc($('#mainShot').textContent)}</div>`); $$('[data-rate]').forEach(b=>b.onclick=()=>saveRating(m.id,+b.dataset.rate)); bindCardActions(); renderComments('mod-'+m.id); }
-function starHtml(id,r){ return [1,2,3,4,5].map(i=>`<button class="star" data-rate="${i}">${i<=Math.round(r||0)?'★':'☆'}</button>`).join(''); }
-function saveRating(id,val){ if(!currentUser){openAuthModal('login');return;} const votes=plxRead(POLUX_DB_KEYS.votes,{}), k=(currentUser.uid||currentUser.email)+'_'+id; if(votes[k])return alert('Оцінку вже збережено'); votes[k]=val; plxWrite(POLUX_DB_KEYS.votes,votes); $('#ratingBox').innerHTML=starHtml(id,val); }
-function renderComments(scope){ const list=getComments(scope); const tree=list.map(c=>commentCard(c,0)).join(''); $('#commentsBox').innerHTML=`${tree||`<p>${t('noItems')}</p>`}${currentUser?`<form class="comment-form" id="commentForm"><textarea maxlength="600" placeholder="${t('writeComment')}"></textarea><button class="btn primary">${t('sendMessage')}</button></form>`:`<button class="btn" onclick="openAuthModal('login')">${t('openLogin')}</button>`}`; $('#commentForm')?.addEventListener('submit',e=>{e.preventDefault(); const text=e.target.querySelector('textarea').value.trim(); if(!text)return; list.push({id:'c'+Date.now(),uid:currentUser.uid,name:currentUser.name,role:highestRole(ensureCurrentProfile?.()||{}),text,score:0,createdAt:nowIso()}); saveComments(scope,list); renderComments(scope); }); $$('[data-comment-vote]').forEach(b=>b.onclick=()=>{const c=list.find(x=>x.id===b.dataset.commentVote); if(c){c.score+=(b.dataset.dir==='up'?1:-1);saveComments(scope,list);renderComments(scope)}}); $$('[data-comment-delete]').forEach(b=>{b.onclick=()=>{const c=list.find(x=>x.id===b.dataset.commentDelete); if(c){c.deleted=true;c.text='';saveComments(scope,list);renderComments(scope)}}}); $$('[data-comment-report]').forEach(b=>b.onclick=()=>openReportTicket('comment',b.dataset.commentReport)); }
-function commentCard(c,level){ const mine=currentUser&&(c.uid===currentUser.uid), mod=currentUser&&isAdminProfile?.(ensureCurrentProfile?.()); const scoreClass=c.score>0?'pos':c.score<0?'neg':''; return `<div class="comment-card" style="margin-left:${Math.min(level,4)*22}px"><div class="comment-head"><strong>${esc(c.name||'User')} <span>#${esc(c.uid||'ID')}</span></strong><small>${esc(c.role||'Користувач')} · ${formatDate(c.createdAt)}</small></div><p>${c.deleted?t('commentDeleted'):esc(c.text)}</p><div class="comment-actions"><button data-comment-vote="${c.id}" data-dir="up">▲</button><b class="${scoreClass}">${c.score||0}</b><button data-comment-vote="${c.id}" data-dir="down">▼</button>${mine?`<button data-comment-delete="${c.id}">${t('deleteComment')}</button>`:''}${!mine?`<button data-comment-report="${c.id}">${t('complain')}</button>`:''}${mod&&!c.deleted?`<button data-comment-delete="${c.id}">${t('deleteComment')}</button>`:''}</div></div>`; }
-function openReportTicket(type,target){ if(!currentUser){openAuthModal('login');return;} modalShell('ticketModal',t('complain'),`<form class="auth-form" id="ticketForm"><label class="field"><span>${t('ticketTheme')}</span><input value="${type}: ${target}"></label><label class="field"><span>${t('ticketText')}</span><textarea id="ticketText" maxlength="300"></textarea></label><button class="btn primary">${t('sendMessage')}</button></form>`); $('#ticketForm').onsubmit=e=>{e.preventDefault(); const arr=getReports(); arr.unshift({id:'r'+Date.now(),kind:'Скарга',type,target,authorUid:currentUser.uid,author:currentUser.name,text:$('#ticketText').value,status:'new',createdAt:nowIso()}); saveReports(arr); $('#ticketModal').remove(); alert(t('ticketSent'));}; }
-function renderFeedbackPage(){ if(!currentUser){openAuthModal('login'); location.hash='#home'; return;} const mine=getReports().filter(r=>r.authorUid===(currentUser.uid||currentUser.email)); $('#app').innerHTML=`<section class="page-panel reveal"><p class="eyebrow">/feedback</p><h1>${t('feedbackTitle')}</h1><div class="tabs"><button class="tab active" data-tab="new">${t('sendTicket')}</button><button class="tab" data-tab="mine">${t('myTickets')}</button></div><div id="tabNew"><form class="contact-form" id="feedbackForm"><select id="fbTopic"><option>Скарга</option><option>Зворотний зв'язок</option><option>${t('other')}</option></select><textarea id="fbText" maxlength="300" placeholder="${t('ticketText')}"></textarea><input id="fbImages" type="file" accept="image/*" multiple><button class="btn primary">${t('sendMessage')}</button></form></div><div id="tabMine" class="hidden news-list">${mine.map(ticketRow).join('')||`<p>${t('noItems')}</p>`}</div></section>`; $$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#tabNew').classList.toggle('hidden',b.dataset.tab!=='new');$('#tabMine').classList.toggle('hidden',b.dataset.tab!=='mine')}); $('#feedbackForm').onsubmit=e=>{e.preventDefault(); const arr=getReports(); arr.unshift({id:'r'+Date.now(),kind:$('#fbTopic').value,type:'feedback',authorUid:currentUser.uid,author:currentUser.name,text:$('#fbText').value,status:'new',createdAt:nowIso(),answer:''}); saveReports(arr); alert(t('ticketSent')); route();}; }
-function ticketRow(r){ const map={new:t('newStatus'),work:t('inWork'),closed:t('closed')}; return `<article class="ticket-row ${r.status}"><span class="ticket-kind">${esc(r.kind)}</span><strong>${esc(r.type||r.target||r.kind)}</strong><small>${map[r.status]||r.status} · ${formatDate(r.createdAt)}</small><p>${esc(r.text||'')}</p>${r.answer?`<p><b>Відповідь:</b> ${esc(r.answer)}</p>`:''}</article>`; }
-function renderFavoritesPage(){ if(!currentUser){openAuthModal('login'); location.hash='#home'; return;} const favs=getFavorites()[currentUser.uid||currentUser.email]||[]; const mods=enrichedMods().filter(m=>favs.includes(m.id)); $('#app').innerHTML=`<section class="page-head page-panel"><p class="eyebrow">/favorites</p><h1>${t('favoritesTitle')}</h1></section><section class="mods-grid reveal">${mods.map(modCard).join('')||`<p>${t('noItems')}</p>`}</section>`; bindCardActions(); }
-function renderNotificationsPage(){ if(!currentUser){openAuthModal('login'); location.hash='#home'; return;} const all=plxRead(POLUX_DB_KEYS.notifications,{}), uid=currentUser.uid||currentUser.email, items=all[uid]||[]; all[uid]=items.map(n=>({...n,read:true})); plxWrite(POLUX_DB_KEYS.notifications,all); $('#app').innerHTML=`<section class="page-panel narrow"><p class="eyebrow">/notifications</p><h1>${t('notificationsTitle')}</h1><div class="news-list">${items.map(n=>`<a class="news-row" href="${n.url||'#'}"><strong>${esc(n.text)}</strong><small>${formatDate(n.createdAt)}</small></a>`).join('')||`<p>${t('noItems')}</p>`}</div></section>`; updateProfileButton(); }
-function renderAdminPanelPage(){ if(!currentUser){openAuthModal('login');location.hash='#home';return;} const me=ensureCurrentProfile?.(); if(!isAdminProfile?.(me)){ $('#app').innerHTML=`<section class="page-panel"><h1>${t('adminPanelTitle')}</h1><p>${t('adminOnly')}</p></section>`; return;} const blocks=[['publish',t('publish')],['users',t('userModeration')],['reports',t('reportsModeration')],['suggested',t('suggestedMods')],['settings',t('siteSettings')]]; $('#app').innerHTML=`<section class="page-head page-panel admin-page"><p class="eyebrow">/admin</p><h1>${t('adminPanelTitle')}</h1><p>${t('adminPanelText')}</p></section><section class="admin-blocks">${blocks.map((b,i)=>`<button class="admin-block ${i?'':'active'}" data-admin-block="${b[0]}"><span>0${i+1}</span><strong>${b[1]}</strong></button>`).join('')}</section><section class="admin-workspace" id="adminWorkspace"></section>`; const show=name=>{$$('.admin-block').forEach(b=>b.classList.toggle('active',b.dataset.adminBlock===name)); ({publish:adminPublish,users:adminUsers,reports:adminReports,suggested:adminSuggested,settings:adminSettings}[name])();}; $$('.admin-block').forEach(b=>b.onclick=()=>show(b.dataset.adminBlock)); show('publish'); }
-function adminPublish(){ $('#adminWorkspace').innerHTML=`<div class="admin-card admin-card-wide"><h3>${t('publish')}</h3><div class="tabs"><button class="tab active" data-pub="home">${t('homeEdit')}</button><button class="tab" data-pub="news">${t('publishNews')}</button><button class="tab" data-pub="mod">${t('publishMods')}</button></div><div id="pubForm"></div></div>`; const paint=type=>{ const forms={home:`<label>${t('heroText')}<textarea id="homeIntro">${esc(getSiteSettings().homeIntro)}</textarea></label>`,news:`<label>${t('publishNews')}<input id="newsTitle" placeholder="Заголовок"></label><textarea id="newsDesc" placeholder="Опис"></textarea><div class="module-note">До 10 блоків: текст, фото, опитування. Структура готова для БД.</div>`,mod:`<div class="mod-form-grid"><input id="modTitle" placeholder="Назва"><input id="modVersion" placeholder="${t('modVersion')}"><input id="modCreator" placeholder="${t('modCreator')}"><input id="modCompat" placeholder="${t('compatibleVersions')}"><textarea id="modDesc" placeholder="${t('fullDesc')}"></textarea><input id="modDownload" placeholder="${t('downloadUrl')}"></div>`}; $('#pubForm').innerHTML=`<form class="admin-form" id="publishForm">${forms[type]}<div class="hero-actions"><button class="btn" type="reset">${t('clear')}</button><button class="btn primary">${t('publishBtn')}</button></div></form>`; $('#publishForm').onsubmit=e=>{e.preventDefault(); if(type==='home'){const st=getSiteSettings();st.homeIntro=$('#homeIntro').value;saveSiteSettings(st);} if(type==='news'){const arr=getNews();arr.unshift({id:'news-'+Date.now(),title:$('#newsTitle').value||'Оновлення Polux Mods',desc:$('#newsDesc').value||'Новина очікує наповнення.',author:currentUser.name,createdAt:nowIso(),blocks:[{type:'text',text:$('#newsDesc').value}]});saveNews(arr);} alert('Опубліковано');}; }; $$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');paint(b.dataset.pub)}); paint('home'); }
-function adminUsers(){ $('#adminWorkspace').innerHTML=`<div class="admin-card admin-card-wide"><h3>${t('userModeration')}</h3><input class="admin-search-field" id="adminUserSearch" placeholder="${t('adminUserSearch')}"><div class="admin-users-list" id="adminUsersList">${renderAdminUsersList('')}</div></div>`; $('#adminUserSearch').oninput=e=>$('#adminUsersList').innerHTML=renderAdminUsersList(e.target.value); }
-function adminReports(){ const rows=getReports(); $('#adminWorkspace').innerHTML=`<div class="admin-card admin-card-wide"><h3>${t('reportsModeration')}</h3><div class="news-list">${rows.map(r=>`<article class="ticket-row ${r.status}"><span class="ticket-kind">${r.kind||'Скарга'}</span><strong>${esc(r.type||r.target||'Звернення')}</strong><small>${formatDate(r.createdAt)} · ${esc(r.author||'')}</small><p>${esc(r.text||'')}</p><div class="hero-actions"><a class="btn" href="#${r.target||'profile'}">Перейти до об'єкта</a><button class="btn" data-report-status="${r.id}:work">${t('inWork')}</button><button class="btn" data-report-status="${r.id}:closed">${t('closed')}</button><button class="btn danger-soft" data-report-status="${r.id}:delete">${t('deleteText')}</button></div></article>`).join('')||`<p>${t('noItems')}</p>`}</div></div>`; $$('[data-report-status]').forEach(b=>b.onclick=()=>{let [id,act]=b.dataset.reportStatus.split(':'), arr=getReports(); if(act==='delete')arr=arr.filter(r=>r.id!==id); else arr=arr.map(r=>r.id===id?{...r,status:act}:r); saveReports(arr); adminReports();}); }
-function adminSuggested(){ const list=plxRead(POLUX_DB_KEYS.suggestions,[{id:'s1',title:'PLX Test Submitted Mod',author:'User',createdAt:nowIso(),status:'new'}]); $('#adminWorkspace').innerHTML=`<div class="admin-card admin-card-wide"><h3>${t('suggestedMods')}</h3>${list.map(x=>`<article class="ticket-row"><strong>${esc(x.title)}</strong><small>${esc(x.author)} · ${formatDate(x.createdAt)}</small><div class="hero-actions"><a class="btn" href="#mods/${x.id}">${t('open')}</a><button class="btn primary">${t('approve')}</button><button class="btn">${t('edit')}</button><button class="btn danger-soft">${t('reject')}</button></div></article>`).join('')}</div>`; }
-function adminSettings(){ const st=getSiteSettings(); $('#adminWorkspace').innerHTML=`<div class="admin-card admin-card-wide"><h3>${t('siteSettings')}</h3><form class="admin-form" id="settingsForm"><label><input type="checkbox" id="seasonal" ${st.seasonal?'checked':''}> ${t('seasonal')}</label><label><input type="checkbox" id="maintenance" ${st.maintenance?'checked':''}> ${t('maintenance')}</label><label><input type="checkbox" id="bannerEnabled" ${st.bannerEnabled?'checked':''}> ${t('headerBanner')}</label><input id="bannerText" value="${esc(st.bannerText)}" placeholder="${t('bannerText')}"><input id="bannerUrl" value="${esc(st.bannerUrl)}" placeholder="${t('bannerUrl')}"><h3>${t('roleSettings')}</h3><div class="role-list">${st.roles.map(r=>`<div class="role-row"><span style="--role-color:${esc(r.color)}"></span><strong>${esc(r.name)}</strong><button class="icon-btn" type="button" data-role-menu="${r.id}">⋯</button></div>`).join('')}</div><button class="btn" type="button" id="addRoleBtn">${t('addRole')}</button><button class="btn primary">${t('save')}</button></form></div>`; $('#settingsForm').onsubmit=e=>{e.preventDefault(); Object.assign(st,{seasonal:$('#seasonal').checked,maintenance:$('#maintenance').checked,bannerEnabled:$('#bannerEnabled').checked,bannerText:$('#bannerText').value,bannerUrl:$('#bannerUrl').value}); saveSiteSettings(st); ensureBanner(); alert(t('save'));}; $('[data-role-menu]')?.addEventListener('click',e=>openRoleModal(st,e.target.dataset.roleMenu)); $('#addRoleBtn').onclick=()=>openRoleModal(st,null); }
-function openRoleModal(st,id){ const r=st.roles.find(x=>x.id===id)||{id:'role'+Date.now(),name:'Нова роль',color:'#ffffff',rights:[]}; modalShell('roleModal',t('roleSettings'),`<form class="auth-form" id="roleForm"><input id="roleName" value="${esc(r.name)}"><input id="roleColor" type="color" value="${esc(r.color)}"><label><input type="checkbox" value="moderate_users" ${r.rights.includes('moderate_users')?'checked':''}> Модерація користувачів</label><label><input type="checkbox" value="publish" ${r.rights.includes('publish')?'checked':''}> Публікація</label><label><input type="checkbox" value="settings" ${r.rights.includes('settings')?'checked':''}> Налаштування сайту</label><div class="hero-actions"><button class="btn" type="button" onclick="document.getElementById('roleModal').remove()">${t('cancel')}</button><button class="btn primary">${t('save')}</button></div></form>`); $('#roleForm').onsubmit=e=>{e.preventDefault(); r.name=$('#roleName').value; r.color=$('#roleColor').value; r.rights=$$('#roleForm input[type=checkbox]:checked').map(x=>x.value); if(!id)st.roles.push(r); saveSiteSettings(st); $('#roleModal').remove(); adminSettings();}; }
-
-checkResetActionFromUrl();
+function init(){ updateViewportHeight(); enhanceCustomSelects(document); applyI18n(); ensureUser(currentUser); syncFirebaseAuth(); renderBanner(); route(); setTimeout(()=>$('#boot')?.classList.add('hide'), 520); }
+init();
