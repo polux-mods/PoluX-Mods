@@ -47,6 +47,45 @@ const TRANSLATION_MEMORY = {
 };
 
 
+
+Object.assign(UI_UK, {
+  adminPanel:'Адмін панель',
+  adminPanelTitle:'Адмін панель',
+  adminPanelText:'Інструменти модерації користувачів, ролей, скарг і стану сайту.',
+  adminOnly:'Доступ тільки для адміністратора або модератора.',
+  userModeration:'Модерація користувачів',
+  userSearchPlaceholder:'UID, email або ім’я користувача',
+  targetUser:'Користувач',
+  adminAction:'Дія',
+  adminActionBan:'Заблокувати',
+  adminActionMute:'Видати мут',
+  adminActionUnban:'Зняти блокування',
+  adminActionUnmute:'Зняти мут',
+  adminActionDelete:'Позначити акаунт видаленим',
+  adminActionRole:'Видати роль',
+  adminRole:'Роль',
+  roleAdministrator:'Адміністратор',
+  roleModerator:'Модератор',
+  roleUser:'Користувач',
+  ratingRoles:'Звання рейтингу',
+  roleRookie:'Новачок',
+  roleMechanic:'Механік',
+  roleDriver:'Водій',
+  roleFarmer:'Фермер',
+  roleMaster:'Майстер модів',
+  roleLegend:'Легенда Polux',
+  moderationReason:'Причина',
+  moderationSaved:'Дію модерації збережено в базі.',
+  moderationLocalSaved:'Дію збережено локально. Firebase/Firestore недоступний.',
+  complaints:'Скарги',
+  complaintsHint:'Тут будуть скарги користувачів для майбутньої адмін-панелі.',
+  siteControls:'Керування сайтом',
+  siteMaintenance:'Технічне обслуговування',
+  siteHolidayTheme:'Святкова тема',
+  publishModsSoon:'Публікація модів і редагування блоків сайту буде додана пізніше.',
+  loginOrRegister:'Вхід / Реєстрація'
+});
+
 Object.assign(UI_UK, {
   googleLogin:'Увійти через Google', googleRegister:'Зареєструватися через Google', orText:'або', forgotPassword:'Забули пароль?',
   resetTitle:'Відновлення пароля', resetEmailText:'Введіть email, і ми надішлемо посилання для відновлення пароля.', sendResetLink:'Надіслати посилання',
@@ -238,6 +277,7 @@ async function sendVerification(user){
 function currentMods(){ return modsSource.map(m => translateRecord(m, currentLang)); }
 
 function applyI18n(){
+  renderProfileMenuItems?.();
   document.documentElement.lang = currentLang;
   $$('[data-i18n]').forEach(el => { if(!el.closest('[data-no-translate]')) el.textContent = t(el.dataset.i18n); });
   $$('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
@@ -287,6 +327,7 @@ function route(){
     else if(page === 'mods') renderTemplate('modsTemplate', renderMods);
     else if(page === 'my-mods') renderMyModsPage();
     else if(page === 'profile-settings') renderProfileSettingsPage();
+    else if(page === 'admin') renderAdminPanelPage();
     else if(page === 'user' && id) renderTemplate('profileTemplate', () => renderProfile(id));
     else if(page === 'about') renderTemplate('aboutTemplate');
     else if(page === 'contact') renderTemplate('contactTemplate');
@@ -366,6 +407,7 @@ function updateProfileButton(){
   const name = $('#profileName');
   const avatar = $('#profileAvatar');
   if(!name || !avatar) return;
+  renderProfileMenuItems();
   name.textContent = currentUser ? (currentUser.name || t('userRole')) : t('loginShort');
   if(currentUser?.avatar){
     avatar.innerHTML = `<img src="${currentUser.avatar}" alt="">`;
@@ -440,24 +482,75 @@ function validateAuthForm(){
   }
   return ok;
 }
+function renderProfileMenuItems(){
+  const menu = $('#profileMenu');
+  if(!menu) return;
+  if(currentUser){
+    menu.innerHTML = `
+      <button type="button" role="menuitem" data-profile-action="profile">${t('menuProfile')}</button>
+      <button type="button" role="menuitem" data-profile-action="mods">${t('menuMyMods')}</button>
+      <button type="button" role="menuitem" data-profile-action="settings">${t('menuSettings')}</button>
+      <button type="button" role="menuitem" data-profile-action="logout">${t('menuLogout')}</button>`;
+  }else{
+    menu.innerHTML = `<button type="button" role="menuitem" data-profile-action="login">${t('loginOrRegister')}</button>`;
+  }
+}
+
 function positionProfileMenu(){
   const btn = $('#profileBtn');
   const menu = $('#profileMenu');
-  if(!btn || !menu || !$('#profileWrap')?.classList.contains('open')) return;
+  const wrap = $('#profileWrap');
+  if(!btn || !menu || !wrap?.classList.contains('open')) return;
   const rect = btn.getBoundingClientRect();
   const gap = 8, margin = 10;
   const width = Math.min(190, window.innerWidth - margin * 2);
   const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
   const top = rect.bottom + gap;
+  menu.style.position = 'fixed';
   menu.style.left = left + 'px';
   menu.style.right = 'auto';
   menu.style.top = top + 'px';
   menu.style.width = width + 'px';
   menu.style.maxHeight = Math.max(130, window.innerHeight - top - margin) + 'px';
 }
-
 function profileKey(uid){ return 'polux.profile.' + (uid || currentUser?.uid || currentUser?.email || 'guest'); }
 function allProfilesKey(){ return 'polux.profiles.index'; }
+
+const POLUX_OWNER_EMAILS = ['vitaliysh0705@gmail.com'];
+function normalizeRole(role){ return String(role || '').trim(); }
+function hasRole(profile, role){ return (profile?.roles || []).includes(role); }
+function isAdminProfile(profile){ return hasRole(profile, 'roleAdministrator') || hasRole(profile, 'roleModerator'); }
+function ratingRoleKeys(rating=0){
+  const score = Number(rating || 0);
+  if(score >= 1000) return ['roleLegend'];
+  if(score >= 500) return ['roleMaster'];
+  if(score >= 250) return ['roleFarmer'];
+  if(score >= 100) return ['roleDriver'];
+  if(score >= 30) return ['roleMechanic'];
+  return ['roleRookie'];
+}
+function baseAccessRoles(user=currentUser, base={}){
+  const roles = new Set(base.roles || []);
+  roles.add('roleUser');
+  if(user?.emailVerified) roles.add('titleVerified');
+  if(user?.email && POLUX_OWNER_EMAILS.includes(String(user.email).toLowerCase())) roles.add('roleAdministrator');
+  return [...roles];
+}
+async function syncProfileToCloud(profile){
+  try{ await window.PoluxDbService?.saveUserProfile?.(profile); }catch(_){}
+}
+async function pullProfileFromCloud(uid=currentUser?.uid){
+  try{
+    const cloud = await window.PoluxDbService?.getUserProfile?.(uid);
+    if(cloud && uid){
+      const local = readProfile(uid);
+      const merged = {...local, ...cloud, uid};
+      localStorage.setItem(profileKey(uid), JSON.stringify(merged));
+      return merged;
+    }
+  }catch(_){}
+  return null;
+}
 function sessionId(){
   let id = localStorage.getItem('polux.session.id');
   if(!id){ id = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('polux.session.id', id); }
@@ -473,7 +566,7 @@ function readProfile(uid=currentUser?.uid){
     name: base.name || user.name || user.email?.split('@')[0] || t('userRole'),
     email: base.email || user.email || '',
     avatar: base.avatar || user.avatar || '', cover: base.cover || '', bio: base.bio || '',
-    roles: base.roles || ['titleUser'].concat(user.emailVerified ? ['titleVerified'] : []),
+    roles: [...new Set([...baseAccessRoles(user, base), ...ratingRoleKeys(Number(base.rating || 0))])],
     rating: Number(base.rating || 0), modsCount: Number(base.modsCount || 0), comments: base.comments || [],
     createdAt: base.createdAt || user.metadata?.creationTime || now, lastOnline: now,
     nameChanges: base.nameChanges || [], deletedAt: base.deletedAt || null,
@@ -484,8 +577,9 @@ function writeProfile(profile){
   profile.lastOnline = new Date().toISOString();
   localStorage.setItem(profileKey(profile.uid), JSON.stringify(profile));
   const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  index[profile.uid] = {uid:profile.uid, name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating};
+  index[profile.uid] = {uid:profile.uid, name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating, email:profile.email, roles:profile.roles, mutedUntil:profile.mutedUntil || null, bannedUntil:profile.bannedUntil || null, deletedAt:profile.deletedAt || null};
   localStorage.setItem(allProfilesKey(), JSON.stringify(index));
+  syncProfileToCloud(profile);
   if(currentUser && (profile.uid === currentUser.uid || profile.email === currentUser.email)){
     currentUser = {...currentUser, name:profile.name, avatar:profile.avatar};
     localStorage.setItem(STORAGE.user, JSON.stringify(currentUser));
@@ -545,9 +639,10 @@ function renderProfile(viewUid){
         <button class="stat-button" type="button" id="viewUserComments"><strong>${t('comments')}</strong><span>${commentsCount} · ${t('viewComments')}</span></button>
       </div>
       <div class="profile-actions-row">
-        ${isOwn ? `<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
+        ${isOwn ? `${isAdminProfile(p)?`<button class="btn admin-panel-btn" id="openAdminPanel">${t('adminPanel')}</button>`:''}<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
       </div>
     </div>`;
+  $('#openAdminPanel')?.addEventListener('click', () => location.hash = '#admin');
   $('#openProfileSettings')?.addEventListener('click', () => location.hash = '#profile-settings');
   $('#profileLogoutBtn')?.addEventListener('click', () => { getFirebaseAuth()?.signOut?.(); saveUser(null); });
   $('#viewUserMods')?.addEventListener('click', () => location.hash = '#my-mods');
@@ -563,9 +658,8 @@ function positionCustomSelectMenu(box){
   const rect = trigger.getBoundingClientRect();
   const gap = 8;
   const margin = 10;
-  const naturalWidth = Math.max(rect.width, 160);
-  const width = Math.min(naturalWidth, window.innerWidth - margin * 2);
-  const left = Math.min(Math.max(rect.left, margin), window.innerWidth - width - margin);
+  const width = Math.min(190, window.innerWidth - margin * 2);
+  const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
   const top = rect.bottom + gap;
   menu.style.width = width + 'px';
   menu.style.left = left + 'px';
@@ -668,6 +762,7 @@ $('#profileMenu').addEventListener('click', e => {
   const action = e.target.closest('[data-profile-action]')?.dataset.profileAction;
   if(!action) return;
   closeProfileMenu();
+  if(action === 'login') openAuthModal('login');
   if(action === 'profile') currentUser ? location.hash = '#profile' : openAuthModal('login');
   if(action === 'mods') currentUser ? location.hash = '#my-mods' : openAuthModal('login');
   if(action === 'settings') currentUser ? location.hash = '#profile-settings' : openAuthModal('login');
@@ -703,6 +798,7 @@ async function loginWithGoogle(){
     }
     if(!cred) return;
     saveUser(firebaseUserToLocalUser(cred.user));
+    pullProfileFromCloud(cred.user.uid).then(p=>{ if(p) updateProfileButton(); });
     closeAuthModal();
     location.hash = '#profile';
   }catch(err){
@@ -817,6 +913,7 @@ $('#authForm').addEventListener('submit', async e => {
         return;
       }
       saveUser({name:cred.user.displayName || name, email:cred.user.email, avatar:cred.user.photoURL || null, uid:cred.user.uid, emailVerified:true, firebase:true});
+      pullProfileFromCloud(cred.user.uid).then(p=>{ if(p) updateProfileButton(); });
       closeAuthModal();
       location.hash = '#profile';
       return;
@@ -930,6 +1027,131 @@ function renderProfileSettingsPage(){
   $('#deleteAccountBtn').addEventListener('click', () => openDeleteAccountModal(p));
   applyI18n();
 }
+
+function findLocalProfileByQuery(query){
+  const q = String(query || '').trim().toLowerCase();
+  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
+  const found = Object.values(index).find(u =>
+    String(u.uid || '').toLowerCase() === q ||
+    String(u.email || '').toLowerCase() === q ||
+    String(u.name || '').toLowerCase().includes(q)
+  );
+  return found ? readProfile(found.uid) : null;
+}
+function roleOptions(selected='roleUser'){
+  const roles = ['roleAdministrator','roleModerator','roleUser'];
+  return roles.map(r => `<option value="${r}" ${r===selected?'selected':''}>${t(r)}</option>`).join('');
+}
+function renderAdminUsersList(){
+  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
+  const users = Object.values(index).sort((a,b)=>Number(b.rating||0)-Number(a.rating||0)).slice(0,30);
+  return users.length ? users.map(u => `
+    <div class="admin-user-row">
+      <span class="admin-user-avatar">${u.avatar?`<img src="${u.avatar}" alt="">`:defaultAvatarSvg()}</span>
+      <div><strong data-no-translate>${u.name || u.email || u.uid}</strong><small>${(u.roles||[]).map(r=>t(r)).join(' · ') || t('roleUser')} · ${t('userRating')}: ${u.rating || 0}</small></div>
+      <button class="icon-btn" type="button" data-admin-load-user="${u.uid}">✎</button>
+    </div>`).join('') : `<p>${t('profileGuest')}</p>`;
+}
+function renderAdminPanelPage(){
+  if(!currentUser){ openAuthModal('login'); location.hash = '#home'; return; }
+  const me = ensureCurrentProfile();
+  if(!isAdminProfile(me)){
+    $('#app').innerHTML = `<section class="page-head page-panel"><p class="eyebrow">/admin</p><h1>${t('adminPanelTitle')}</h1><p>${t('adminOnly')}</p></section>`;
+    return;
+  }
+  $('#app').innerHTML = `
+    <section class="page-head page-panel admin-page">
+      <p class="eyebrow">/admin</p>
+      <h1>${t('adminPanelTitle')}</h1>
+      <p>${t('adminPanelText')}</p>
+    </section>
+    <section class="admin-grid reveal">
+      <article class="admin-card">
+        <h3>${t('userModeration')}</h3>
+        <form class="auth-form" id="adminUserForm">
+          <label class="field"><span>${t('targetUser')}</span><input id="adminUserQuery" placeholder="${t('userSearchPlaceholder')}"></label>
+          <label class="field"><span>${t('adminAction')}</span><select id="adminActionSelect">
+            <option value="ban">${t('adminActionBan')}</option>
+            <option value="mute">${t('adminActionMute')}</option>
+            <option value="unban">${t('adminActionUnban')}</option>
+            <option value="unmute">${t('adminActionUnmute')}</option>
+            <option value="delete">${t('adminActionDelete')}</option>
+            <option value="role">${t('adminActionRole')}</option>
+          </select></label>
+          <label class="field" id="adminRoleWrap"><span>${t('adminRole')}</span><select id="adminRoleSelect">${roleOptions()}</select></label>
+          <label class="field"><span>${t('moderationReason')}</span><textarea id="adminReason" maxlength="300"></textarea></label>
+          <button class="btn primary" type="submit">${t('save')}</button>
+          <div class="auth-status" id="adminStatus" aria-live="polite"></div>
+        </form>
+      </article>
+      <article class="admin-card">
+        <h3>${t('ratingRoles')}</h3>
+        <div class="role-ladder">
+          <span>${t('roleRookie')} · 0+</span>
+          <span>${t('roleMechanic')} · 30+</span>
+          <span>${t('roleDriver')} · 100+</span>
+          <span>${t('roleFarmer')} · 250+</span>
+          <span>${t('roleMaster')} · 500+</span>
+          <span>${t('roleLegend')} · 1000+</span>
+        </div>
+      </article>
+      <article class="admin-card">
+        <h3>${t('complaints')}</h3>
+        <p>${t('complaintsHint')}</p>
+        <div class="admin-mini-list">${renderReportsPreview()}</div>
+      </article>
+      <article class="admin-card">
+        <h3>${t('siteControls')}</h3>
+        <label class="switch-row"><input type="checkbox" id="maintenanceToggle"> <span>${t('siteMaintenance')}</span></label>
+        <label class="switch-row"><input type="checkbox" id="holidayToggle"> <span>${t('siteHolidayTheme')}</span></label>
+        <p>${t('publishModsSoon')}</p>
+      </article>
+      <article class="admin-card admin-card-wide">
+        <h3>${t('userModeration')}</h3>
+        <div class="admin-users-list">${renderAdminUsersList()}</div>
+      </article>
+    </section>`;
+  enhanceCustomSelects($('#app'));
+  $('#adminActionSelect').addEventListener('change', () => $('#adminRoleWrap').classList.toggle('hidden', $('#adminActionSelect').value !== 'role'));
+  $('#adminActionSelect').dispatchEvent(new Event('change'));
+  $$('[data-admin-load-user]').forEach(btn => btn.addEventListener('click', () => { $('#adminUserQuery').value = btn.dataset.adminLoadUser; window.scrollTo({top:0,behavior:'smooth'}); }));
+  $('#maintenanceToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({maintenance:e.target.checked}));
+  $('#holidayToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({holidayTheme:e.target.checked}));
+  $('#adminUserForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const status = $('#adminStatus');
+    const target = findLocalProfileByQuery($('#adminUserQuery').value) || readProfile($('#adminUserQuery').value);
+    const action = $('#adminActionSelect').value;
+    const reason = $('#adminReason').value.trim();
+    if(!target?.uid){ status.textContent = t('fieldRequired'); status.className='auth-status show error'; return; }
+    if(action === 'ban') target.bannedUntil = 'permanent';
+    if(action === 'mute') target.mutedUntil = 'permanent';
+    if(action === 'unban') target.bannedUntil = null;
+    if(action === 'unmute') target.mutedUntil = null;
+    if(action === 'delete') target.deletedAt = new Date().toISOString();
+    if(action === 'role'){
+      const manual = $('#adminRoleSelect').value;
+      const rating = ratingRoleKeys(target.rating);
+      target.roles = [...new Set([manual, ...rating, ...(target.emailVerified?['titleVerified']:[])])];
+    }
+    writeProfile(target);
+    const payload = {action, reason, targetUid:target.uid, targetEmail:target.email || '', moderatorUid:me.uid, moderatorEmail:me.email || '', role:$('#adminRoleSelect').value};
+    let cloudOk = false;
+    try{ await window.PoluxDbService?.saveAdminAction?.(payload); cloudOk = true; }catch(_){}
+    status.textContent = cloudOk ? t('moderationSaved') : t('moderationLocalSaved');
+    status.className = 'auth-status show ok';
+  });
+}
+function renderReportsPreview(){
+  const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
+  const rows = [];
+  Object.values(index).forEach(u => {
+    const p = readProfile(u.uid);
+    (p.reports || []).slice(-3).forEach(r => rows.push(`<div class="admin-report-row"><strong data-no-translate>${p.name}</strong><small>${r.reason || ''} · ${formatDateShort(r.createdAt)}</small></div>`));
+  });
+  return rows.length ? rows.slice(-8).join('') : `<p>${t('complaintsHint')}</p>`;
+}
+
 function renderMyModsPage(){
   if(!currentUser){ openAuthModal('login'); location.hash='#home'; return; }
   const p = ensureCurrentProfile();
@@ -985,7 +1207,7 @@ function openCommentsModal(p){
 function openReportModal(p){
   modalShell('reportModal', t('reportUser'), `<form class="auth-form" id="reportForm"><label class="field"><span>${t('reportReason')}</span><select id="reportReason"><option>${t('reportSpam')}</option><option>${t('reportInsult')}</option><option>${t('reportFake')}</option><option>${t('reportRules')}</option><option value="other">${t('reportOther')}</option></select></label><label class="field hidden" id="reportOtherWrap"><span>${t('reportDetails')}</span><textarea id="reportDetails"></textarea></label><button class="btn primary">${t('sendMessage')}</button></form>`);
   $('#reportReason').onchange=()=>$('#reportOtherWrap').classList.toggle('hidden',$('#reportReason').value!=='other');
-  $('#reportForm').onsubmit=e=>{e.preventDefault(); p.reports.push({from:currentUser.uid, reason:$('#reportReason').value, details:$('#reportDetails')?.value||'', createdAt:new Date().toISOString()}); writeProfile(p); alert(t('reportSent')); $('#reportModal').remove();};
+  $('#reportForm').onsubmit=e=>{e.preventDefault(); const report={from:currentUser.uid, targetUid:p.uid, reason:$('#reportReason').value, details:$('#reportDetails')?.value||'', createdAt:new Date().toISOString()}; p.reports.push(report); writeProfile(p); window.PoluxDbService?.saveUserReport?.(report); alert(t('reportSent')); $('#reportModal').remove();};
 }
 function sendThanks(p){
   if(!currentUser || p.uid===currentUser.uid){alert(t('cantThankSelf'));return;}
