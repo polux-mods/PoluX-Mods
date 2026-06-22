@@ -83,7 +83,20 @@ Object.assign(UI_UK, {
   siteMaintenance:'Технічне обслуговування',
   siteHolidayTheme:'Святкова тема',
   publishModsSoon:'Публікація модів і редагування блоків сайту буде додана пізніше.',
-  loginOrRegister:'Вхід / Реєстрація'
+  loginOrRegister:'Вхід / Реєстрація',
+  userId:'ID користувача',
+  adminOpenMenu:'Меню дій',
+  adminUserList:'Список користувачів',
+  adminSearchUsers:'Пошук користувачів',
+  adminNoUsers:'Користувачів не знайдено.',
+  moderateUser:'Модерувати користувача',
+  viewProfile:'Переглянути профіль',
+  roleOwner:'Власник Polux',
+  roleAuthor:'Автор модів',
+  roleVeteran:'Ветеран',
+  roleHelper:'Помічник спільноти',
+  uploadToServerFailed:'Не вдалося завантажити зображення на сервер. Збережено локально.',
+  firebaseNeedEnable:'Для повної роботи увімкни у Firebase: Authentication, Firestore Database і Storage.'
 });
 
 Object.assign(UI_UK, {
@@ -100,6 +113,12 @@ const AUTH_EXTRA_TRANSLATIONS = {
   fr:{googleLogin:'Continuer avec Google',googleRegister:'S’inscrire avec Google',orText:'ou',forgotPassword:'Mot de passe oublié ?',resetTitle:'Récupération du mot de passe',resetEmailText:'Saisis ton email et nous enverrons un lien de réinitialisation.',sendResetLink:'Envoyer le lien',newPassword:'Nouveau mot de passe',confirmNewPassword:'Confirmer le nouveau mot de passe',resetPasswordButton:'Changer le mot de passe',resetEmailSent:'Email de réinitialisation envoyé. Vérifie ta boîte mail.',resetPasswordSuccess:'Mot de passe modifié. Tu peux maintenant te connecter.',resetLinkInvalid:'Le lien de réinitialisation est invalide ou expiré.',authPopupClosed:'Connexion Google annulée.',googleLoginFailed:'Impossible de se connecter avec Google.'}
 };
 Object.entries(AUTH_EXTRA_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
+const ADMIN_EXTRA_TRANSLATIONS = {
+  ru:{userId:'ID пользователя',adminOpenMenu:'Меню действий',adminUserList:'Список пользователей',adminSearchUsers:'Поиск пользователей',adminNoUsers:'Пользователи не найдены.',moderateUser:'Модерировать пользователя',viewProfile:'Посмотреть профиль',roleOwner:'Владелец Polux',roleAuthor:'Автор модов',roleVeteran:'Ветеран',roleHelper:'Помощник сообщества',uploadToServerFailed:'Не удалось подготовить изображение. Попробуйте файл меньшего размера или вставьте ссылку.',firebaseNeedEnable:'Для полной работы включите в Firebase: Authentication и Firestore Database. Storage не нужен в бесплатном режиме.'},
+  en:{userId:'User ID',adminOpenMenu:'Actions menu',adminUserList:'Users list',adminSearchUsers:'Search users',adminNoUsers:'No users found.',moderateUser:'Moderate user',viewProfile:'View profile',roleOwner:'Polux owner',roleAuthor:'Mods author',roleVeteran:'Veteran',roleHelper:'Community helper',uploadToServerFailed:'Could not prepare the image. Try a smaller file or paste a link.',firebaseNeedEnable:'For full operation enable Firebase Authentication and Firestore Database. Storage is not required in free mode.'}
+};
+Object.entries(ADMIN_EXTRA_TRANSLATIONS).forEach(([lang, pack]) => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, pack));
+['pl','de','es','fr'].forEach(lang => Object.assign(TRANSLATION_MEMORY[lang] ||= {}, ADMIN_EXTRA_TRANSLATIONS.en));
 
 
 // Profile module translations: immutable UI labels are localized here.
@@ -515,6 +534,15 @@ function positionProfileMenu(){
 }
 function profileKey(uid){ return 'polux.profile.' + (uid || currentUser?.uid || currentUser?.email || 'guest'); }
 function allProfilesKey(){ return 'polux.profiles.index'; }
+function makePublicId(seed){
+  const raw = String(seed || '').replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  let hash = 0;
+  for(let i=0;i<raw.length;i++) hash = ((hash << 5) - hash + raw.charCodeAt(i)) >>> 0;
+  return 'PLX-' + String(hash).padStart(8,'0').slice(-8);
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
 
 const POLUX_OWNER_EMAILS = ['vitaliysh0705@gmail.com'];
 function normalizeRole(role){ return String(role || '').trim(); }
@@ -533,7 +561,13 @@ function baseAccessRoles(user=currentUser, base={}){
   const roles = new Set(base.roles || []);
   roles.add('roleUser');
   if(user?.emailVerified) roles.add('titleVerified');
-  if(user?.email && POLUX_OWNER_EMAILS.includes(String(user.email).toLowerCase())) roles.add('roleAdministrator');
+  if(Number(base.rating || 0) >= 150) roles.add('roleHelper');
+  if(Number(base.rating || 0) >= 700) roles.add('roleVeteran');
+  if(Number(base.modsCount || 0) > 0) roles.add('roleAuthor');
+  if(user?.email && POLUX_OWNER_EMAILS.includes(String(user.email).toLowerCase())){
+    roles.add('roleAdministrator');
+    roles.add('roleOwner');
+  }
   return [...roles];
 }
 async function syncProfileToCloud(profile){
@@ -558,26 +592,33 @@ function sessionId(){
 }
 function readProfile(uid=currentUser?.uid){
   const user = currentUser || {};
+  const isCurrent = !uid || uid === user.uid || uid === user.email;
   const raw = localStorage.getItem(profileKey(uid || user.uid || user.email));
   const now = new Date().toISOString();
   const base = raw ? JSON.parse(raw) : {};
-  return {
-    uid: uid || user.uid || base.uid || user.email || 'local',
-    name: base.name || user.name || user.email?.split('@')[0] || t('userRole'),
-    email: base.email || user.email || '',
-    avatar: base.avatar || user.avatar || '', cover: base.cover || '', bio: base.bio || '',
-    roles: [...new Set([...baseAccessRoles(user, base), ...ratingRoleKeys(Number(base.rating || 0))])],
+  const resolvedUid = uid || user.uid || base.uid || user.email || 'local';
+  const nameFallback = isCurrent ? (user.name || user.email?.split('@')[0]) : (base.name || resolvedUid);
+  const profile = {
+    uid: resolvedUid,
+    publicId: base.publicId || makePublicId(resolvedUid),
+    name: base.name || nameFallback || t('userRole'),
+    email: base.email || (isCurrent ? user.email : '') || '',
+    avatar: base.avatar || (isCurrent ? user.avatar : '') || '',
+    cover: base.cover || '', bio: base.bio || '',
     rating: Number(base.rating || 0), modsCount: Number(base.modsCount || 0), comments: base.comments || [],
-    createdAt: base.createdAt || user.metadata?.creationTime || now, lastOnline: now,
+    createdAt: base.createdAt || user.metadata?.creationTime || now, lastOnline: isCurrent ? now : (base.lastOnline || now),
     nameChanges: base.nameChanges || [], deletedAt: base.deletedAt || null,
-    thanksFrom: base.thanksFrom || {}, reports: base.reports || [], sessions: base.sessions || []
+    thanksFrom: base.thanksFrom || {}, reports: base.reports || [], sessions: base.sessions || [],
+    mutedUntil: base.mutedUntil || null, bannedUntil: base.bannedUntil || null
   };
+  profile.roles = [...new Set([...baseAccessRoles(isCurrent ? user : {}, {...base, rating:profile.rating, modsCount:profile.modsCount, roles:base.roles}), ...ratingRoleKeys(profile.rating)])];
+  return profile;
 }
 function writeProfile(profile){
   profile.lastOnline = new Date().toISOString();
   localStorage.setItem(profileKey(profile.uid), JSON.stringify(profile));
   const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  index[profile.uid] = {uid:profile.uid, name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating, email:profile.email, roles:profile.roles, mutedUntil:profile.mutedUntil || null, bannedUntil:profile.bannedUntil || null, deletedAt:profile.deletedAt || null};
+  index[profile.uid] = {uid:profile.uid, publicId:profile.publicId || makePublicId(profile.uid), name:profile.name, avatar:profile.avatar, cover:profile.cover, rating:profile.rating, email:profile.email, roles:profile.roles, mutedUntil:profile.mutedUntil || null, bannedUntil:profile.bannedUntil || null, deletedAt:profile.deletedAt || null};
   localStorage.setItem(allProfilesKey(), JSON.stringify(index));
   syncProfileToCloud(profile);
   if(currentUser && (profile.uid === currentUser.uid || profile.email === currentUser.email)){
@@ -609,14 +650,18 @@ function renderProfile(viewUid){
     $('#profileLoginBtn').addEventListener('click', () => openAuthModal('login'));
     return;
   }
-  const p = ensureCurrentProfile();
+  const ownProfile = ensureCurrentProfile();
+  let p = viewUid ? readProfile(viewUid) : ownProfile;
+  if(viewUid){
+    pullProfileFromCloud(viewUid).then(cloud => { if(cloud && location.hash === '#user/' + viewUid) renderProfile(viewUid); });
+  }
   if(p.deletedAt){
     const canRecover = Date.now() - new Date(p.deletedAt).getTime() <= 30*86400000;
     box.innerHTML = `<div class="profile-empty"><div class="profile-big-avatar">${profileAvatarHtml(p)}</div><h2>${t('recoverAccount')}</h2><p>${t('recoverAccountText')}</p>${canRecover?`<button class="btn primary" id="recoverAccountBtn">${t('recoverAccount')}</button>`:''}</div>`;
     $('#recoverAccountBtn')?.addEventListener('click', () => { p.deletedAt=null; writeProfile(p); alert(t('accountRecovered')); renderProfile(); });
     return;
   }
-  const isOwn = !viewUid || viewUid === p.uid;
+  const isOwn = !viewUid || viewUid === ownProfile.uid;
   const roles = (p.roles || ['titleUser']).map(r => `<span class="profile-rank">${t(r)}</span>`).join('');
   const commentsCount = (p.comments || []).length;
   const modsByUser = modsSource.filter(m => (m.author || '').toLowerCase() === (p.name || '').toLowerCase());
@@ -627,11 +672,13 @@ function renderProfile(viewUid){
         <div class="profile-big-avatar floating">${profileAvatarHtml(p)}</div>
         <div class="profile-main-info">
           <h2 data-no-translate>${p.name}</h2>
+          <div class="profile-public-id">${t('userId')}: <span data-no-translate>${p.publicId || makePublicId(p.uid)}</span></div>
           <div class="profile-ranks">${roles}</div>
           ${p.bio ? `<p class="profile-bio" data-auto-translate>${translateText(p.bio,currentLang)}</p>` : ''}
         </div>
       </div>
       <div class="profile-stats-grid">
+        <div><strong>${t('userId')}</strong><span data-no-translate>${p.publicId || makePublicId(p.uid)}</span></div>
         <div><strong>${t('lastOnline')}</strong><span>${formatDateShort(p.lastOnline)}</span></div>
         <div><strong>${t('registeredAt')}</strong><span>${formatDateShort(p.createdAt)} · ${t('registeredFor')} ${daysRegistered(p.createdAt)}</span></div>
         <div><strong>${t('userRating')}</strong><span>${p.rating}</span></div>
@@ -639,11 +686,12 @@ function renderProfile(viewUid){
         <button class="stat-button" type="button" id="viewUserComments"><strong>${t('comments')}</strong><span>${commentsCount} · ${t('viewComments')}</span></button>
       </div>
       <div class="profile-actions-row">
-        ${isOwn ? `${isAdminProfile(p)?`<button class="btn admin-panel-btn" id="openAdminPanel">${t('adminPanel')}</button>`:''}<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
+        ${isOwn ? `${isAdminProfile(p)?`<button class="btn admin-panel-btn wide" id="openAdminPanel">${t('adminPanel')}</button>`:''}<button class="btn primary" id="openProfileSettings">${t('openSettings')}</button><button class="btn" id="profileLogoutBtn">${t('signOut')}</button>` : `${isAdminProfile(ownProfile)?`<button class="btn admin-panel-btn wide" id="moderateProfileUserBtn">${t('moderateUser')}</button>`:''}<button class="btn danger-soft" id="reportUserBtn">${t('reportUser')}</button><button class="btn primary" id="thanksUserBtn">${t('thanksUser')}</button>`}
       </div>
     </div>`;
   $('#openAdminPanel')?.addEventListener('click', () => location.hash = '#admin');
   $('#openProfileSettings')?.addEventListener('click', () => location.hash = '#profile-settings');
+  $('#moderateProfileUserBtn')?.addEventListener('click', () => openUserModerationModal(p));
   $('#profileLogoutBtn')?.addEventListener('click', () => { getFirebaseAuth()?.signOut?.(); saveUser(null); });
   $('#viewUserMods')?.addEventListener('click', () => location.hash = '#my-mods');
   $('#viewUserComments')?.addEventListener('click', () => openCommentsModal(p));
@@ -659,7 +707,7 @@ function positionCustomSelectMenu(box){
   const gap = 8;
   const margin = 10;
   const width = Math.min(190, window.innerWidth - margin * 2);
-  const left = Math.min(Math.max(rect.right - width, margin), window.innerWidth - width - margin);
+  const left = Math.min(Math.max(rect.left, margin), window.innerWidth - width - margin);
   const top = rect.bottom + gap;
   menu.style.width = width + 'px';
   menu.style.left = left + 'px';
@@ -1042,15 +1090,95 @@ function roleOptions(selected='roleUser'){
   const roles = ['roleAdministrator','roleModerator','roleUser'];
   return roles.map(r => `<option value="${r}" ${r===selected?'selected':''}>${t(r)}</option>`).join('');
 }
-function renderAdminUsersList(){
+function getLocalProfilesList(){
   const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
-  const users = Object.values(index).sort((a,b)=>Number(b.rating||0)-Number(a.rating||0)).slice(0,30);
-  return users.length ? users.map(u => `
-    <div class="admin-user-row">
-      <span class="admin-user-avatar">${u.avatar?`<img src="${u.avatar}" alt="">`:defaultAvatarSvg()}</span>
-      <div><strong data-no-translate>${u.name || u.email || u.uid}</strong><small>${(u.roles||[]).map(r=>t(r)).join(' · ') || t('roleUser')} · ${t('userRating')}: ${u.rating || 0}</small></div>
-      <button class="icon-btn" type="button" data-admin-load-user="${u.uid}">✎</button>
-    </div>`).join('') : `<p>${t('profileGuest')}</p>`;
+  return Object.values(index).map(u => ({...readProfile(u.uid), ...u}));
+}
+function renderAdminUsersList(users=getLocalProfilesList(), query=''){
+  const q = String(query || '').trim().toLowerCase();
+  const filtered = users.filter(u => !q || `${u.uid} ${u.publicId || ''} ${u.email || ''} ${u.name || ''}`.toLowerCase().includes(q))
+    .sort((a,b)=>Number(b.rating||0)-Number(a.rating||0));
+  return filtered.length ? filtered.map(u => `
+    <div class="admin-user-row" data-admin-user-row="${escapeHtml(u.uid)}">
+      <span class="admin-user-avatar">${u.avatar?`<img src="${escapeHtml(u.avatar)}" alt="">`:defaultAvatarSvg()}</span>
+      <div class="admin-user-info"><strong data-no-translate>${escapeHtml(u.name || u.email || u.uid)}</strong><small><span data-no-translate>${escapeHtml(u.publicId || makePublicId(u.uid))}</span> · ${(u.roles||[]).map(r=>t(r)).join(' · ') || t('roleUser')} · ${t('userRating')}: ${u.rating || 0}</small></div>
+      <div class="admin-kebab-wrap">
+        <button class="icon-btn admin-kebab" type="button" aria-label="${t('adminOpenMenu')}" data-admin-menu="${escapeHtml(u.uid)}">⋯</button>
+        <div class="admin-kebab-menu" data-admin-menu-panel="${escapeHtml(u.uid)}">
+          <button type="button" data-admin-view="${escapeHtml(u.uid)}">${t('viewProfile')}</button>
+          <button type="button" data-admin-moderate="${escapeHtml(u.uid)}">${t('moderateUser')}</button>
+          <button type="button" data-admin-quick="ban" data-uid="${escapeHtml(u.uid)}">${t('adminActionBan')}</button>
+          <button type="button" data-admin-quick="mute" data-uid="${escapeHtml(u.uid)}">${t('adminActionMute')}</button>
+          <button type="button" data-admin-quick="role" data-uid="${escapeHtml(u.uid)}">${t('adminActionRole')}</button>
+        </div>
+      </div>
+    </div>`).join('') : `<p>${t('adminNoUsers')}</p>`;
+}
+async function refreshAdminUsersList(query=''){
+  let users = getLocalProfilesList();
+  try{
+    const cloud = await window.PoluxDbService?.listUsers?.(80);
+    if(Array.isArray(cloud) && cloud.length){
+      cloud.forEach(u => localStorage.setItem(profileKey(u.uid), JSON.stringify({...readProfile(u.uid), ...u})));
+      users = cloud;
+    }
+  }catch(_){ }
+  const list = $('#adminUsersList');
+  if(list) list.innerHTML = renderAdminUsersList(users, query);
+  bindAdminUserListActions(users);
+}
+function bindAdminUserListActions(users=getLocalProfilesList()){
+  $$('[data-admin-menu]').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const uid = btn.dataset.adminMenu;
+    $$('[data-admin-menu-panel]').forEach(m => m.classList.toggle('open', m.dataset.adminMenuPanel === uid && !m.classList.contains('open')));
+  }));
+  $$('[data-admin-view]').forEach(btn => btn.addEventListener('click', () => { location.hash = '#user/' + btn.dataset.adminView; }));
+  $$('[data-admin-moderate]').forEach(btn => btn.addEventListener('click', () => openUserModerationModal(readProfile(btn.dataset.adminModerate))));
+  $$('[data-admin-quick]').forEach(btn => btn.addEventListener('click', () => openUserModerationModal(readProfile(btn.dataset.uid), btn.dataset.adminQuick)));
+}
+function openUserModerationModal(target, presetAction='ban'){
+  if(!currentUser) return openAuthModal('login');
+  const me = readProfile();
+  if(!isAdminProfile(me)){ alert(t('adminOnly')); return; }
+  const p = {...readProfile(target.uid), ...target};
+  modalShell('userModerationModal', `${t('moderateUser')} · ${escapeHtml(p.name)}`, `<form class="auth-form" id="userModerationForm">
+    <p class="auth-hint"><span data-no-translate>${escapeHtml(p.publicId || makePublicId(p.uid))}</span> · ${escapeHtml(p.email || p.uid)}</p>
+    <label class="field"><span>${t('adminAction')}</span><select id="moderationActionSelect">
+      <option value="ban">${t('adminActionBan')}</option><option value="mute">${t('adminActionMute')}</option><option value="unban">${t('adminActionUnban')}</option><option value="unmute">${t('adminActionUnmute')}</option><option value="delete">${t('adminActionDelete')}</option><option value="role">${t('adminActionRole')}</option>
+    </select></label>
+    <label class="field" id="moderationRoleWrap"><span>${t('adminRole')}</span><select id="moderationRoleSelect">${roleOptions((p.roles||[]).find(r=>['roleAdministrator','roleModerator','roleUser'].includes(r)) || 'roleUser')}</select></label>
+    <label class="field"><span>${t('moderationReason')}</span><textarea id="moderationReason" maxlength="300"></textarea></label>
+    <button class="btn primary">${t('save')}</button><div class="auth-status" id="moderationStatus"></div>
+  </form>`);
+  enhanceCustomSelects($('#userModerationModal'));
+  $('#moderationActionSelect').value = presetAction;
+  syncCustomSelect($('#moderationActionSelect'));
+  const toggleRole=()=>$('#moderationRoleWrap').classList.toggle('hidden', $('#moderationActionSelect').value !== 'role');
+  $('#moderationActionSelect').addEventListener('change', toggleRole); toggleRole();
+  $('#userModerationForm').onsubmit = async e => {
+    e.preventDefault();
+    const action = $('#moderationActionSelect').value;
+    const reason = $('#moderationReason').value.trim();
+    applyModerationPatch(p, action, $('#moderationRoleSelect').value);
+    writeProfile(p);
+    const payload = {action, reason, targetUid:p.uid, targetEmail:p.email || '', moderatorUid:me.uid, moderatorEmail:me.email || '', role:$('#moderationRoleSelect').value};
+    try{ await window.PoluxDbService?.updateUserModeration?.(p.uid, p, payload); $('#moderationStatus').textContent=t('moderationSaved'); }
+    catch(_){ $('#moderationStatus').textContent=t('moderationLocalSaved'); }
+    $('#moderationStatus').className='auth-status show ok';
+    setTimeout(()=>$('#userModerationModal')?.remove(), 650);
+  };
+}
+function applyModerationPatch(target, action, role){
+  if(action === 'ban') target.bannedUntil = 'permanent';
+  if(action === 'mute') target.mutedUntil = 'permanent';
+  if(action === 'unban') target.bannedUntil = null;
+  if(action === 'unmute') target.mutedUntil = null;
+  if(action === 'delete') target.deletedAt = new Date().toISOString();
+  if(action === 'role'){
+    const rating = ratingRoleKeys(target.rating);
+    target.roles = [...new Set([role, ...rating, ...(target.emailVerified?['titleVerified']:[])])];
+  }
 }
 function renderAdminPanelPage(){
   if(!currentUser){ openAuthModal('login'); location.hash = '#home'; return; }
@@ -1064,40 +1192,22 @@ function renderAdminPanelPage(){
       <p class="eyebrow">/admin</p>
       <h1>${t('adminPanelTitle')}</h1>
       <p>${t('adminPanelText')}</p>
+      <p class="auth-hint">${t('firebaseNeedEnable')}</p>
     </section>
     <section class="admin-grid reveal">
-      <article class="admin-card">
-        <h3>${t('userModeration')}</h3>
-        <form class="auth-form" id="adminUserForm">
-          <label class="field"><span>${t('targetUser')}</span><input id="adminUserQuery" placeholder="${t('userSearchPlaceholder')}"></label>
-          <label class="field"><span>${t('adminAction')}</span><select id="adminActionSelect">
-            <option value="ban">${t('adminActionBan')}</option>
-            <option value="mute">${t('adminActionMute')}</option>
-            <option value="unban">${t('adminActionUnban')}</option>
-            <option value="unmute">${t('adminActionUnmute')}</option>
-            <option value="delete">${t('adminActionDelete')}</option>
-            <option value="role">${t('adminActionRole')}</option>
-          </select></label>
-          <label class="field" id="adminRoleWrap"><span>${t('adminRole')}</span><select id="adminRoleSelect">${roleOptions()}</select></label>
-          <label class="field"><span>${t('moderationReason')}</span><textarea id="adminReason" maxlength="300"></textarea></label>
-          <button class="btn primary" type="submit">${t('save')}</button>
-          <div class="auth-status" id="adminStatus" aria-live="polite"></div>
-        </form>
+      <article class="admin-card admin-card-wide admin-users-card">
+        <div class="admin-card-head"><h3>${t('adminUserList')}</h3><span>${t('userModeration')}</span></div>
+        <label class="field admin-search"><span>${t('adminSearchUsers')}</span><input id="adminUsersSearch" placeholder="${t('userSearchPlaceholder')}"></label>
+        <div class="admin-users-list pretty" id="adminUsersList">${renderAdminUsersList()}</div>
       </article>
       <article class="admin-card">
         <h3>${t('ratingRoles')}</h3>
         <div class="role-ladder">
-          <span>${t('roleRookie')} · 0+</span>
-          <span>${t('roleMechanic')} · 30+</span>
-          <span>${t('roleDriver')} · 100+</span>
-          <span>${t('roleFarmer')} · 250+</span>
-          <span>${t('roleMaster')} · 500+</span>
-          <span>${t('roleLegend')} · 1000+</span>
+          <span>${t('roleRookie')} · 0+</span><span>${t('roleMechanic')} · 30+</span><span>${t('roleDriver')} · 100+</span><span>${t('roleHelper')} · 150+</span><span>${t('roleFarmer')} · 250+</span><span>${t('roleMaster')} · 500+</span><span>${t('roleVeteran')} · 700+</span><span>${t('roleLegend')} · 1000+</span>
         </div>
       </article>
       <article class="admin-card">
         <h3>${t('complaints')}</h3>
-        <p>${t('complaintsHint')}</p>
         <div class="admin-mini-list">${renderReportsPreview()}</div>
       </article>
       <article class="admin-card">
@@ -1106,41 +1216,12 @@ function renderAdminPanelPage(){
         <label class="switch-row"><input type="checkbox" id="holidayToggle"> <span>${t('siteHolidayTheme')}</span></label>
         <p>${t('publishModsSoon')}</p>
       </article>
-      <article class="admin-card admin-card-wide">
-        <h3>${t('userModeration')}</h3>
-        <div class="admin-users-list">${renderAdminUsersList()}</div>
-      </article>
     </section>`;
-  enhanceCustomSelects($('#app'));
-  $('#adminActionSelect').addEventListener('change', () => $('#adminRoleWrap').classList.toggle('hidden', $('#adminActionSelect').value !== 'role'));
-  $('#adminActionSelect').dispatchEvent(new Event('change'));
-  $$('[data-admin-load-user]').forEach(btn => btn.addEventListener('click', () => { $('#adminUserQuery').value = btn.dataset.adminLoadUser; window.scrollTo({top:0,behavior:'smooth'}); }));
-  $('#maintenanceToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({maintenance:e.target.checked}));
-  $('#holidayToggle').addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({holidayTheme:e.target.checked}));
-  $('#adminUserForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const status = $('#adminStatus');
-    const target = findLocalProfileByQuery($('#adminUserQuery').value) || readProfile($('#adminUserQuery').value);
-    const action = $('#adminActionSelect').value;
-    const reason = $('#adminReason').value.trim();
-    if(!target?.uid){ status.textContent = t('fieldRequired'); status.className='auth-status show error'; return; }
-    if(action === 'ban') target.bannedUntil = 'permanent';
-    if(action === 'mute') target.mutedUntil = 'permanent';
-    if(action === 'unban') target.bannedUntil = null;
-    if(action === 'unmute') target.mutedUntil = null;
-    if(action === 'delete') target.deletedAt = new Date().toISOString();
-    if(action === 'role'){
-      const manual = $('#adminRoleSelect').value;
-      const rating = ratingRoleKeys(target.rating);
-      target.roles = [...new Set([manual, ...rating, ...(target.emailVerified?['titleVerified']:[])])];
-    }
-    writeProfile(target);
-    const payload = {action, reason, targetUid:target.uid, targetEmail:target.email || '', moderatorUid:me.uid, moderatorEmail:me.email || '', role:$('#adminRoleSelect').value};
-    let cloudOk = false;
-    try{ await window.PoluxDbService?.saveAdminAction?.(payload); cloudOk = true; }catch(_){}
-    status.textContent = cloudOk ? t('moderationSaved') : t('moderationLocalSaved');
-    status.className = 'auth-status show ok';
-  });
+  bindAdminUserListActions();
+  refreshAdminUsersList();
+  $('#adminUsersSearch')?.addEventListener('input', e => refreshAdminUsersList(e.target.value));
+  $('#maintenanceToggle')?.addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({maintenance:e.target.checked}));
+  $('#holidayToggle')?.addEventListener('change', e => window.PoluxDbService?.updateSiteSettings?.({holidayTheme:e.target.checked}));
 }
 function renderReportsPreview(){
   const index = JSON.parse(localStorage.getItem(allProfilesKey()) || '{}');
@@ -1169,7 +1250,14 @@ function openImageChoice(kind, p){
   const title = kind==='avatar' ? (has?t('replaceAvatar'):t('addAvatar')) : (has?t('replaceCover'):t('addCover'));
   const m = modalShell('imageChoiceModal', title, `<div class="auth-form"><button class="btn" id="imgFileBtn">${t('chooseFromFile')}</button><button class="btn" id="imgUrlBtn">${t('chooseFromUrl')}</button>${has?`<button class="btn danger-soft" id="imgRemoveBtn">${kind==='avatar'?t('removeAvatar'):t('removeCover')}</button>`:''}</div><input class="hidden" id="profileImageFile" type="file" accept="image/*">`);
   $('#imgFileBtn').onclick=()=>$('#profileImageFile').click();
-  $('#profileImageFile').onchange=e=>{ const file=e.target.files?.[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{p[kind]=r.result; writeProfile(p); m.remove(); renderProfileSettingsPage();}; r.readAsDataURL(file); };
+  $('#profileImageFile').onchange=async e=>{
+    const file=e.target.files?.[0]; if(!file) return;
+    try{
+      const url = await window.PoluxStorageService?.uploadUserImage?.(p.uid, kind, file);
+      if(url){ p[kind]=url; writeProfile(p); m.remove(); renderProfileSettingsPage(); return; }
+      alert(t('uploadToServerFailed'));
+    }catch(_){ alert(t('uploadToServerFailed')); }
+  };
   $('#imgUrlBtn').onclick=()=>{ const url=prompt(t('imageUrl')); if(url){p[kind]=url.trim(); writeProfile(p); m.remove(); renderProfileSettingsPage();} };
   $('#imgRemoveBtn') && ($('#imgRemoveBtn').onclick=()=>{p[kind]=''; writeProfile(p); m.remove(); renderProfileSettingsPage();});
 }
@@ -1213,7 +1301,7 @@ function sendThanks(p){
   if(!currentUser || p.uid===currentUser.uid){alert(t('cantThankSelf'));return;}
   const month = new Date().toISOString().slice(0,7); const key=currentUser.uid+'_'+month; const sent=JSON.parse(localStorage.getItem('polux.thanks.sent')||'{}');
   if(sent[p.uid] || Object.keys(sent).filter(k=>k.endsWith('_'+month)).length>=3){alert(t('thanksLimit'));return;}
-  if(confirm(t('thanksConfirm'))){ sent[p.uid]=true; sent[key]=true; localStorage.setItem('polux.thanks.sent',JSON.stringify(sent)); p.rating+=10; writeProfile(p); alert(t('thanksSent')); renderProfile(p.uid); }
+  if(confirm(t('thanksConfirm'))){ sent[p.uid]=true; sent[key]=true; localStorage.setItem('polux.thanks.sent',JSON.stringify(sent)); p.rating+=10; writeProfile(p); window.PoluxDbService?.saveThanks?.({fromUid:currentUser.uid,toUid:p.uid,ratingDelta:10}); alert(t('thanksSent')); renderProfile(p.uid); }
 }
 
 checkResetActionFromUrl();
