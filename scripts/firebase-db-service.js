@@ -15,10 +15,6 @@
     return dbInstance;
   }
 
-  function cleanObject(obj){
-    return JSON.parse(JSON.stringify(obj || {}));
-  }
-
   async function getUserProfile(uid){
     const db = getDb();
     if(!db || !uid) return null;
@@ -26,37 +22,34 @@
     return snap.exists ? snap.data() : null;
   }
 
+  async function getAllUserProfiles(limit=80){
+    const db = getDb();
+    if(!db) return [];
+    const snap = await db.collection('users').orderBy('updatedAt','desc').limit(limit).get();
+    return snap.docs.map(doc => ({uid:doc.id, ...doc.data()}));
+  }
+
+  async function updateUserProfile(uid, patch){
+    const db = getDb();
+    if(!db || !uid || !patch) return null;
+    const clean = JSON.parse(JSON.stringify({...patch, updatedAt:new Date().toISOString()}));
+    await db.collection('users').doc(uid).set(clean, {merge:true});
+    return clean;
+  }
+
   async function saveUserProfile(profile){
     const db = getDb();
     if(!db || !profile || !profile.uid) return null;
-    const clean = cleanObject(profile);
+    const clean = JSON.parse(JSON.stringify(profile));
     clean.updatedAt = new Date().toISOString();
     await db.collection('users').doc(profile.uid).set(clean, {merge:true});
     return clean;
   }
 
-  async function listUsers(limit){
-    const db = getDb();
-    if(!db) return [];
-    const snap = await db.collection('users').orderBy('updatedAt', 'desc').limit(limit || 80).get();
-    const rows = [];
-    snap.forEach(doc => rows.push({uid:doc.id, ...doc.data()}));
-    return rows;
-  }
-
-  async function updateUserModeration(uid, patch, action){
-    const db = getDb();
-    if(!db || !uid) return null;
-    const payload = {...cleanObject(patch), updatedAt:new Date().toISOString()};
-    await db.collection('users').doc(uid).set(payload, {merge:true});
-    if(action) await saveAdminAction(action);
-    return payload;
-  }
-
   async function saveAdminAction(action){
     const db = getDb();
     if(!db || !action) return null;
-    const payload = {...cleanObject(action), createdAt:new Date().toISOString()};
+    const payload = {...action, createdAt:new Date().toISOString()};
     await db.collection('adminActions').add(payload);
     return payload;
   }
@@ -64,24 +57,15 @@
   async function saveUserReport(report){
     const db = getDb();
     if(!db || !report) return null;
-    const payload = {...cleanObject(report), status:'new', createdAt:new Date().toISOString()};
+    const payload = {...report, status:'new', createdAt:new Date().toISOString()};
     await db.collection('reports').add(payload);
-    return payload;
-  }
-
-  async function saveThanks(thanks){
-    const db = getDb();
-    if(!db || !thanks) return null;
-    const id = `${thanks.fromUid}_${thanks.toUid}`;
-    const payload = {...cleanObject(thanks), createdAt:new Date().toISOString()};
-    await db.collection('thanks').doc(id).set(payload, {merge:false});
     return payload;
   }
 
   async function updateSiteSettings(settings){
     const db = getDb();
     if(!db || !settings) return null;
-    await db.collection('site').doc('settings').set({...cleanObject(settings), updatedAt:new Date().toISOString()}, {merge:true});
+    await db.collection('site').doc('settings').set({...settings, updatedAt:new Date().toISOString()}, {merge:true});
     return settings;
   }
 
@@ -90,11 +74,10 @@
     getDb,
     getUserProfile,
     saveUserProfile,
-    listUsers,
-    updateUserModeration,
+    getAllUserProfiles,
+    updateUserProfile,
     saveAdminAction,
     saveUserReport,
-    saveThanks,
     updateSiteSettings
   };
 })();

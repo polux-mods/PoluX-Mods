@@ -48,7 +48,37 @@
 - `scripts/firebase-auth-service.js` — сервіс авторизації Firebase/Google.
 - `app.js` — основна логіка інтерфейсу, маршрути, каталог, локалізація.
 
+## Що підключити для ролей, профілів і фото
 
-## Free image mode
+Сайт уже підготовлений під Firebase Auth + Firestore без Firebase Storage. Аватар і фон профілю стискаються у браузері та зберігаються прямо в документі користувача `users/{uid}`. Це безкоштовніший варіант, але не завантажуй дуже великі фото: Firestore має ліміт розміру документа.
 
-Profile avatars and covers do not require Firebase Storage. Images selected from files are compressed in the browser and saved as data URLs in the user document in Firestore. The URL option can still be used for external image links. Enable only Firebase Authentication and Firestore Database for this mode.
+1. У Firebase Console відкрий Project Settings → General → Web app і перевір дані у `scripts/firebase-config.js`.
+2. У Build → Authentication → Sign-in method увімкни Email/Password і Google, якщо потрібен Google-вхід.
+3. У Build → Firestore Database створи базу даних.
+4. Для тесту можна почати з правил нижче, але для продакшну краще посилити перевірки ролей через custom claims або серверні Cloud Functions.
+
+```js
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+    match /reports/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
+    match /adminActions/{docId} {
+      allow create: if request.auth != null;
+      allow read: if false;
+    }
+    match /site/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+Адміном автоматично стає акаунт з email `vitaliysh0705@gmail.com`. Додаткові ролі можна видати в адмін-панелі: `Адміністратор`, `Модератор`, `Користувач`.
