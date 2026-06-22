@@ -69,6 +69,32 @@
     return settings;
   }
 
+  async function savePublication(type, item){
+    const db = getDb();
+    if(!db || !type || !item) return null;
+    const clean = JSON.parse(JSON.stringify({...item, updatedAt:new Date().toISOString()}));
+    const col = type === 'news' ? 'news' : type === 'mod' ? 'mods' : 'home';
+    if(clean.id){ await db.collection(col).doc(clean.id).set(clean, {merge:true}); return clean; }
+    const ref = await db.collection(col).add(clean);
+    return {id:ref.id, ...clean};
+  }
+
+  async function saveAppeal(appeal){
+    const db = getDb();
+    if(!db || !appeal) return null;
+    const payload = {...appeal, status:appeal.status || 'new', createdAt:appeal.createdAt || new Date().toISOString()};
+    await db.collection('appeals').doc(payload.id || String(Date.now())).set(payload, {merge:true});
+    return payload;
+  }
+
+  async function saveNotification(uid, notification){
+    const db = getDb();
+    if(!db || !uid || !notification) return null;
+    const payload = {...notification, read:false, createdAt:notification.createdAt || new Date().toISOString()};
+    await db.collection('users').doc(uid).collection('notifications').doc(payload.id || String(Date.now())).set(payload, {merge:true});
+    return payload;
+  }
+
   window.PoluxDbService = {
     configReady,
     getDb,
@@ -78,6 +104,9 @@
     updateUserProfile,
     saveAdminAction,
     saveUserReport,
-    updateSiteSettings
+    updateSiteSettings,
+    savePublication,
+    saveAppeal,
+    saveNotification
   };
 })();
